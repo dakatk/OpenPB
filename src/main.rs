@@ -100,7 +100,7 @@ impl Layer<'_> {
             biases: Array::random(neurons, Uniform::new(0., 1.)),
             inputs: Array::zeros(inputs),
             activations: Array::zeros(neurons),
-            delta: Array::zeros(1),
+            delta: Array::zeros(neurons),
             neurons: neurons,
             attached_layer: None,
             activation_fn: activation_fn,
@@ -117,6 +117,7 @@ impl Layer<'_> {
     }
 
     pub fn back_prop(&mut self, actual: &Array1<f64>, target: &Array1<f64>) {
+        // TODO separate for variables 'assign' calls
         match self.attached_layer {
             Some(layer) => self.delta = layer.weights.t().dot(&layer.delta),
             _ => self.delta = actual - target,
@@ -130,8 +131,8 @@ impl Layer<'_> {
         let delta_size: usize = self.delta.len();
         let inputs_size: usize = self.inputs.len();
 
-        let delta: Array2<f64> = Array2::from(vec![self.delta.iter()]);
-        let inputs: Array2<f64> = Array2::from(vec![self.delta.iter()]);
+        let delta = Array2::<f64>::from(vec![self.delta.iter()]);
+        let inputs = Array2::<f64>::from(vec![self.delta.iter()]);
 
         let gradient: Array2<f64> = delta.t().dot(&inputs);
 
