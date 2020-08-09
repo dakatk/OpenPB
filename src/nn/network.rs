@@ -2,7 +2,7 @@ use crate::nn::activations::ActivationFn;
 use crate::nn::costs::Cost;
 use crate::nn::optimizers::Optimizer;
 
-use ndarray::{Array, Array1, Array2};
+use ndarray::{Array, Array1, Array2, Axis};
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 
@@ -56,13 +56,10 @@ impl Layer<'_> {
     }
 
     fn update(&mut self, index: usize, optimizer: Box<dyn Optimizer>) {
-        let delta_size: usize = self.delta.len();
-        let inputs_size: usize = self.inputs.len();
+        let delta: Array2<f64> = self.delta.clone().insert_axis(Axis(1));
+        let inputs: Array2<f64> = self.inputs.clone().insert_axis(Axis(0));
 
-        let delta = Array2::<f64>::from(vec![self.delta.iter()]);
-        let inputs = Array2::<f64>::from(vec![self.delta.iter()]);
-
-        let gradient: Array2<f64> = delta.t().dot(&inputs);
+        let gradient: Array2<f64> = delta.dot(&inputs);
 
         let weights: Array2<f64> = -optimizer.delta(index, gradient) + &self.weights;
         let biases: Array1<f64> = optimizer.learning_rate() * &self.delta;
@@ -106,10 +103,10 @@ impl Network<'_> {
         self.layers.push(layer);
     }
 
-    pub fn fit(&self, inputs: Vec<Array1<f64>>, outputs: Vec<Array1<f64>>, epochs: usize) {
-        let samples: Vec<usize> = (0..inputs.len()).collect();
+    pub fn fit(&self, inputs: &Vec<Array1<f64>>, outputs: &Vec<Array1<f64>>, epochs: usize) {
+        let mut samples: Vec<usize> = (0..inputs.len()).collect();
 
-        for i in 0..epochs {
+        for _ in 0..epochs {
             // TODO early stop condition
             samples.shuffle(&mut thread_rng());
 
@@ -133,7 +130,7 @@ impl Network<'_> {
     }
 
     pub fn predict(&self, inputs: &Array1<f64>) -> Array1<f64> {
-        let output: Array1<f64> = inputs.to_owned(); // clone();
+        let mut output: Array1<f64> = inputs.to_owned(); // clone();
 
         for layer in self.layers.iter() {
             let next_output: Array1<f64> = layer.feed_forward(&output);
