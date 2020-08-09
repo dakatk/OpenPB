@@ -108,7 +108,28 @@ impl Network<'_> {
 
     pub fn fit(&self, inputs: Vec<Array1<f64>>, outputs: Vec<Array1<f64>>, epochs: usize) {
         let samples: Vec<usize> = (0..inputs.len()).collect();
-        for i in 0..epochs {}
+
+        for i in 0..epochs {
+            // TODO early stop condition
+            samples.shuffle(&mut thread_rng());
+
+            for sample in samples {
+                let network_output = self.predict(&inputs[sample]);
+
+                self.layers.reverse();
+
+                for layer in self.layers {
+                    layer.back_prop(&network_output, &outputs[sample]);
+                }
+
+                self.layers.reverse();
+
+                for (i, layer) in self.layers.iter().enumerate() {
+                    layer.update(i, self.optimizer);
+                }
+            }
+        }
+        // TODO return errors
     }
 
     pub fn predict(&self, inputs: &Array1<f64>) -> Array1<f64> {
