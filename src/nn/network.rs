@@ -16,7 +16,6 @@ struct Layer {
     activations: Array1<f64>,
     delta: Array1<f64>,
     neurons: usize,
-    attached_layer: Option<Box<Layer>>,
     activation_fn: Box<dyn ActivationFn>,
 }
 
@@ -29,7 +28,6 @@ impl Layer {
             activations: Array::zeros(neurons),
             delta: Array::zeros(neurons),
             neurons: neurons,
-            attached_layer: None,
             activation_fn: activation_fn,
         }
     }
@@ -43,10 +41,15 @@ impl Layer {
         self.activation_fn.call(&activations)
     }
 
-    fn back_prop(&mut self, actual: &Array1<f64>, target: &Array1<f64>) {
+    fn back_prop(
+        &mut self,
+        actual: &Array1<f64>,
+        target: &Array1<f64>,
+        attached_layer: Option<&Layer>,
+    ) {
         let prev_delta: Array1<f64>;
 
-        match &self.attached_layer {
+        match attached_layer {
             Some(layer) => prev_delta = layer.weights.t().dot(&layer.delta),
             _ => prev_delta = actual - target,
         };
@@ -70,6 +73,7 @@ impl Layer {
 }
 
 pub struct Network {
+    // TODO do we only need input_layer and output_layer?
     layers: Vec<Layer>,
     optimizer: Box<dyn Optimizer>,
     cost: Box<dyn Cost>,
@@ -94,12 +98,10 @@ impl Network {
     }
 
     fn add_hidden_layer(&mut self, neurons: usize, activation_fn: Box<dyn ActivationFn>) {
-        let mut prev_layer = self.layers.last_mut().unwrap();
-        let layer = Layer::new(neurons, prev_layer.neurons, activation_fn);
+        let prev_neurons = self.layers.last_mut().unwrap().neurons;
 
-        let boxed = Box::new(layer);
-        prev_layer.attached_layer = Some(boxed);
-        // self.layers.push(boxed);
+        self.layers
+            .push(Layer::new(neurons, prev_neurons, activation_fn));
     }
 
     pub fn add_layer(
@@ -118,25 +120,25 @@ impl Network {
         }
     }
 
-    pub fn fit(&self, inputs: &Vec<Array1<f64>>, outputs: &Vec<Array1<f64>>, epochs: usize) {
-        let mut samples: Vec<usize> = (0..inputs.len()).collect();
-
+    pub fn fit(&mut self, inputs: &Vec<Array1<f64>>, outputs: &Vec<Array1<f64>>, epochs: usize) {
         for _ in 0..epochs {
             // TODO early stop condition
+            let mut samples: Vec<usize> = (0..inputs.len()).collect();
             samples.shuffle(&mut thread_rng());
 
             for sample in samples {
                 let network_output = self.predict(&inputs[sample]);
 
-                self.layers.reverse();
-
-                for layer in self.layers {
-                    layer.back_prop(&network_output, &outputs[sample]);
+                for (i, layer) in self.layers.iter_mut().rev().enumerate() {
+                    let attached_layer = if i >= self.layers.len() {
+                        None
+                    } else {
+                        Some(&self.layers[i + 1])
+                    };
+                    layer.back_prop(&network_output, &outputs[sample], attached_layer);
                 }
 
-                self.layers.reverse();
-
-                for (i, layer) in self.layers.iter().enumerate() {
+                for (i, layer) in self.layers.iter_mut().enumerate() {
                     layer.update(i, self.optimizer);
                 }
             }
@@ -144,14 +146,13 @@ impl Network {
         // TODO return errors
     }
 
-    pub fn predict(&self, inputs: &Array1<f64>) -> Array1<f64> {
+    pub fn predict(&mut self, inputs: &Array1<f64>) -> Array1<f64> {
         let mut output: Array1<f64> = inputs.to_owned(); // clone();
 
-        for layer in self.layers.iter() {
+        for layer in self.layers.iter_mut() {
             let next_output: Array1<f64> = layer.feed_forward(&output);
             output.assign(&next_output);
         }
-
         output
     }
 }
