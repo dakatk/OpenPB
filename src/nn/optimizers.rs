@@ -34,7 +34,6 @@ impl Optimizer for SGD {
 
         let moment: Array2<f64> =
             (&self.velocities[index] * self.momentum) + (gradient * self.learning_rate);
-
         self.velocities[index].assign(&moment);
         moment
     }

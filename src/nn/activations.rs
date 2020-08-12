@@ -9,17 +9,19 @@ pub trait ActivationFn {
 #[derive(Clone)]
 pub struct Sigmoid;
 
+impl Sigmoid {
+    fn f(x: f64) -> f64 {
+        1. / (1. + f64::exp(-x))
+    }
+}
+
 impl ActivationFn for Sigmoid {
     fn call(&self, x: &Array1<f64>) -> Array1<f64> {
-        x.mapv(|el| 1. / 1. + f64::exp(-el))
+        x.mapv(|el| Sigmoid::f(el))
     }
 
     fn prime(&self, x: &Array1<f64>) -> Array1<f64> {
-        fn sigmoid(el: f64) -> f64 {
-            1. / 1. + f64::exp(-el)
-        }
-
-        x.mapv(|el| sigmoid(el) * (1. - sigmoid(el)))
+        x.mapv(|el| Sigmoid::f(el) * (1. - Sigmoid::f(el)))
     }
 
     fn box_clone(&self) -> Box<dyn ActivationFn> {

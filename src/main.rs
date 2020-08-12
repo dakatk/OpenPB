@@ -28,10 +28,9 @@ fn main() {
 
     let optimizer = SGD::new(0.9, 0.1);
 
-    network.fit(&inputs, &outputs, Box::new(optimizer), 1);
+    network.fit(&inputs, &outputs, Box::new(optimizer), 10000);
 
-    /*
     for (input, output) in inputs.iter().zip(outputs) {
-        print!("{}: {} {}", input, network.predict(input), output);
-    }*/
+        println!("{}: {} {}", input, network.predict(input), output);
+    }
 }
