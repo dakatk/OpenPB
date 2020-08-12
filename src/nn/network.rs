@@ -45,7 +45,7 @@ impl Layer {
         &mut self,
         actual: &Array1<f64>,
         target: &Array1<f64>,
-        attached_layer: Option<&Layer>,
+        attached_layer: Option<Layer>,
         cost: Box<dyn Cost>,
     ) {
         let prev_delta: Array1<f64>;
@@ -58,7 +58,7 @@ impl Layer {
         self.delta = self.activation_fn.prime(&self.activations) * &prev_delta;
     }
 
-    fn update(&mut self, index: usize, mut optimizer: Box<dyn Optimizer>) {
+    fn update<'a>(&mut self, index: usize, optimizer: &mut (dyn Optimizer + 'a)) {
         let delta: Array2<f64> = self.delta.clone().insert_axis(Axis(1));
         let inputs: Array2<f64> = self.inputs.clone().insert_axis(Axis(0));
 
@@ -87,7 +87,6 @@ impl Clone for Layer {
 }
 
 pub struct Network {
-    // TODO do we only need input_layer and output_layer?
     layers: Vec<Layer>,
     cost: Box<dyn Cost>,
 }
@@ -132,7 +131,7 @@ impl Network {
         &mut self,
         inputs: &Vec<Array1<f64>>,
         outputs: &Vec<Array1<f64>>,
-        optimizer: Box<dyn Optimizer>,
+        mut optimizer: Box<dyn Optimizer>,
         epochs: usize,
     ) {
         for _ in 0..epochs {
@@ -141,21 +140,28 @@ impl Network {
             samples.shuffle(&mut thread_rng());
 
             for sample in samples {
-                let network_output = self.predict(&inputs[sample]);
-                let layers = self.layers.to_owned();
-                for (i, layer) in self.layers.iter_mut().rev().enumerate() {
-                    println!("i: {}", i);
-                    let attached_layer = if i > 0 { Some(&layers[i - 1]) } else { None };
-                    layer.back_prop(
+                let network_output: Array1<f64> = self.predict(&inputs[sample]);
+                let len: usize = self.layers.to_owned().len();
+
+                let mut attached_layer: Option<Layer>;
+                for i in (0..len).rev() {
+                    {
+                        attached_layer = if i < len - 1 {
+                            let layer = self.layers[i + 1].clone();
+                            Some(layer)
+                        } else {
+                            None
+                        };
+                    }
+                    self.layers[i].back_prop(
                         &network_output,
                         &outputs[sample],
                         attached_layer,
                         self.cost.box_clone(),
                     );
                 }
-
                 for (i, layer) in self.layers.iter_mut().enumerate() {
-                    layer.update(i, optimizer.box_clone());
+                    layer.update(i, &mut *optimizer);
                 }
             }
         }
