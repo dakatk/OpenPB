@@ -135,7 +135,7 @@ impl Network {
         outputs: &Vec<Array1<f64>>,
         mut optimizer: Box<dyn Optimizer>,
         epochs: usize,
-    ) {
+    ) -> Vec<Array1<f64>> {
         let mut rng = thread_rng();
         for _ in 0..epochs {
             // TODO early stop condition
@@ -160,6 +160,7 @@ impl Network {
                         &network_output,
                         &outputs[sample],
                         attached_layer,
+                        // TODO can probably remove clone in exchange for specifying lifetimes
                         self.cost.box_clone(),
                     );
                 }
@@ -168,11 +169,18 @@ impl Network {
                 }
             }
         }
-        // TODO return errors
+        let mut errors: Vec<Array1<f64>> = vec![];
+
+        for (input, output) in inputs.iter().zip(outputs) {
+            let network_output = self.predict(input);
+            let error = self.cost.prime(&network_output, output);
+            errors.push(error);
+        }
+        errors
     }
 
     pub fn predict(&mut self, inputs: &Array1<f64>) -> Array1<f64> {
-        let mut output: Array1<f64> = inputs.to_owned(); // clone();
+        let mut output: Array1<f64> = inputs.to_owned();
 
         for layer in self.layers.iter_mut() {
             output = layer.feed_forward(&output);
