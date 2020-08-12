@@ -52,11 +52,10 @@ impl Layer {
 
         match attached_layer {
             Some(layer) => prev_delta = layer.weights.t().dot(&layer.delta),
-            _ => prev_delta = cost.prime(&actual, &target), //actual - target,
+            _ => prev_delta = cost.prime(&actual, &target),
         };
 
-        let delta: Array1<f64> = self.activation_fn.prime(&self.activations) * &prev_delta;
-        self.delta.assign(&delta);
+        self.delta = self.activation_fn.prime(&self.activations) * &prev_delta;
     }
 
     fn update(&mut self, index: usize, mut optimizer: Box<dyn Optimizer>) {
@@ -124,12 +123,8 @@ impl Network {
         activation_fn: Box<dyn ActivationFn>,
     ) {
         match inputs {
-            Some(inputs) => {
-                self.add_input_layer(neurons, inputs, activation_fn);
-            }
-            _ => {
-                self.add_hidden_layer(neurons, activation_fn);
-            }
+            Some(inputs) => self.add_input_layer(neurons, inputs, activation_fn),
+            _ => self.add_hidden_layer(neurons, activation_fn),
         }
     }
 
@@ -147,10 +142,10 @@ impl Network {
 
             for sample in samples {
                 let network_output = self.predict(&inputs[sample]);
-                let len = self.layers.len();
                 let layers = self.layers.to_owned();
                 for (i, layer) in self.layers.iter_mut().rev().enumerate() {
-                    let attached_layer = if i >= len { None } else { Some(&layers[i + 1]) };
+                    println!("i: {}", i);
+                    let attached_layer = if i > 0 { Some(&layers[i - 1]) } else { None };
                     layer.back_prop(
                         &network_output,
                         &outputs[sample],
@@ -171,8 +166,7 @@ impl Network {
         let mut output: Array1<f64> = inputs.to_owned(); // clone();
 
         for layer in self.layers.iter_mut() {
-            let next_output: Array1<f64> = layer.feed_forward(&output);
-            output.assign(&next_output);
+            output = layer.feed_forward(&output);
         }
         output
     }
