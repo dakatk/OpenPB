@@ -160,7 +160,6 @@ impl Network {
                         &network_output,
                         &outputs[sample],
                         attached_layer,
-                        // TODO can probably remove clone in exchange for specifying lifetimes
                         self.cost.box_clone(),
                     );
                 }
