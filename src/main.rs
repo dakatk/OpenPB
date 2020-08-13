@@ -2,6 +2,7 @@ mod nn;
 
 use nn::activations::Sigmoid;
 use nn::costs::MSE;
+use nn::metrics::Accuracy;
 use nn::network::Network;
 use nn::optimizers::SGD;
 
@@ -27,8 +28,15 @@ fn main() {
     network.add_layer(1, None, Box::new(Sigmoid {}));
 
     let optimizer = SGD::new(0.9, 0.1);
+    let metric = Accuracy::new(1);
 
-    network.fit(&inputs, &outputs, Box::new(optimizer), 10000);
+    network.fit(
+        &inputs,
+        &outputs,
+        Box::new(optimizer),
+        Box::new(metric),
+        10000,
+    );
 
     for (input, output) in inputs.iter().zip(outputs) {
         println!("{}: {} {}", input, network.predict(input), output);

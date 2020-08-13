@@ -1,5 +1,6 @@
 use crate::nn::activations::ActivationFn;
 use crate::nn::costs::Cost;
+use crate::nn::metrics::Metric;
 use crate::nn::optimizers::Optimizer;
 
 use ndarray::{Array, Array1, Array2, Axis};
@@ -134,12 +135,13 @@ impl Network {
         inputs: &Vec<Array1<f64>>,
         outputs: &Vec<Array1<f64>>,
         mut optimizer: Box<dyn Optimizer>,
+        metric: Box<dyn Metric>,
         epochs: usize,
     ) -> Vec<Array1<f64>> {
         let mut rng = thread_rng();
-        for _ in 0..epochs {
-            // TODO early stop condition
+        for epoch in 0..epochs {
             let mut samples: Vec<usize> = (0..inputs.len()).collect();
+            let mut early_stop = true;
             samples.shuffle(&mut rng);
 
             for sample in samples {
@@ -166,6 +168,15 @@ impl Network {
                 for (i, layer) in self.layers.iter_mut().enumerate() {
                     layer.update(i, &mut *optimizer);
                 }
+
+                if !metric.call(&network_output, &outputs[sample]) {
+                    early_stop = false;
+                }
+            }
+
+            if early_stop {
+                println!("ended on epoch {}", epoch);
+                break;
             }
         }
         let mut errors: Vec<Array1<f64>> = vec![];

@@ -6,18 +6,19 @@ pub trait Metric {
 }
 
 pub struct Accuracy {
-    digits: u16,
+    tol: f64,
 }
 
 impl Accuracy {
     pub fn new(digits: u16) -> Accuracy {
-        Accuracy { digits: digits }
+        Accuracy {
+            tol: f64::powi(10., -(digits as i32)),
+        }
     }
 }
 
 impl Metric for Accuracy {
     fn call(&self, o: &Array1<f64>, y: &Array1<f64>) -> bool {
-        let tol = f64::powi(10., -(self.digits as i32 + 1));
-        o.abs_diff_eq(y, tol)
+        o.abs_diff_eq(y, self.tol)
     }
 }
