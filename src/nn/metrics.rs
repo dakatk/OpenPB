@@ -16,6 +16,7 @@ pub trait Metric {
 /// Metric that is satisfied when all values are accurate
 /// to a certain number of decimal places
 pub struct Accuracy {
+    /// Tolerance for representing the "approximately equal to" factor
     tol: f64,
 }
 

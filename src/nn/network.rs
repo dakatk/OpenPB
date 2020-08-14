@@ -10,17 +10,29 @@ use ndarray_rand::RandomExt;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
+/// A single Layer in the Network
 struct Layer {
+    /// Matrix of weights (shape: neurons x inputs)
     weights: Array2<f64>,
+    /// Vector of bias offsets
     biases: Array1<f64>,
+    /// Input vector recorded during the feed-forward process
     inputs: Array1<f64>,
+    /// Activation values: (weights dot inputs) + biases
     activations: Array1<f64>,
+    /// Delta values computed using the first derivative of
+    /// the Layer's activation function during backprop. Used
+    /// to compute the gradient during the update stage
     delta: Array1<f64>,
+    /// Number of neurons, determines how many
+    /// weights/biases are present
     neurons: usize,
+    /// Function that determines the activation of individual neurons
     activation_fn: Box<dyn ActivationFn>,
 }
 
 impl Layer {
+    /// # Arguments
     fn new(neurons: usize, inputs: usize, activation_fn: Box<dyn ActivationFn>) -> Layer {
         Layer {
             weights: Array::random((neurons, inputs), Uniform::new(0., 1.)),
@@ -33,6 +45,7 @@ impl Layer {
         }
     }
 
+    ///
     fn feed_forward(&mut self, inputs: &Array1<f64>) -> Array1<f64> {
         let activations: Array1<f64> = self.weights.dot(inputs) + &self.biases;
 
@@ -42,6 +55,7 @@ impl Layer {
         self.activation_fn.call(&activations)
     }
 
+    ///
     fn back_prop(
         &mut self,
         actual: &Array1<f64>,
@@ -90,11 +104,15 @@ impl Clone for Layer {
 }
 
 pub struct Network {
+    /// Input, hidden, and output layers. Each layer is considered
+    /// to be 'connected' to the next one in the list
     layers: Vec<Layer>,
+    /// Loss function for error reporting/backprop
     cost: Box<dyn Cost>,
 }
 
 impl Network {
+    ///
     pub fn new(cost: Box<dyn Cost>) -> Network {
         Network {
             layers: vec![],
@@ -102,6 +120,7 @@ impl Network {
         }
     }
 
+    ///
     fn add_input_layer(
         &mut self,
         neurons: usize,
