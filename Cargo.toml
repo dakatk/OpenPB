@@ -1,5 +1,5 @@
 [package]
-name = "nn_cli"
+name = "perceptron_cli"
 version = "0.1.0"
 authors = ["dakatk <dakatk97@gmail.com>"]
 edition = "2018"

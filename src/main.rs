@@ -1,3 +1,5 @@
+// To generate docs for this project, run command:
+// cargo doc --open --no-deps --document-private-items
 mod nn;
 
 use nn::activations::Sigmoid;
@@ -8,6 +10,7 @@ use nn::optimizers::SGD;
 
 use ndarray::{Array, Array1};
 
+#[doc(hidden)]
 fn main() {
     let inputs: Vec<Array1<f64>> = vec![
         Array::from(vec![0.0, 0.0]),
