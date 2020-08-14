@@ -33,6 +33,10 @@ struct Layer {
 
 impl Layer {
     /// # Arguments
+    ///
+    /// * `neurons` - Number of neurons, determines how many weights/biases are present
+    /// * `inputs` - Size of expected input vector
+    /// * `activation_fn` - Function that determines the activation of individual neurons
     fn new(neurons: usize, inputs: usize, activation_fn: Box<dyn ActivationFn>) -> Layer {
         Layer {
             weights: Array::random((neurons, inputs), Uniform::new(0., 1.)),
@@ -45,7 +49,11 @@ impl Layer {
         }
     }
 
+    /// Feedforward step for an individual Layer. Used for predicting outputs from a given input
     ///
+    /// # Arguments
+    ///
+    /// * `inputs` - Input vector to calculate activation values
     fn feed_forward(&mut self, inputs: &Array1<f64>) -> Array1<f64> {
         let activations: Array1<f64> = self.weights.dot(inputs) + &self.biases;
 
@@ -55,7 +63,15 @@ impl Layer {
         self.activation_fn.call(&activations)
     }
 
+    /// Backprop step for an individual Layer. Used for adjusting weights/biases
+    /// based on the rror of the predicted outputs from the Layer's feedforward step
     ///
+    /// # Arguments
+    ///
+    /// * `actual` - Predicted output values
+    /// * `expected` - Target output values
+    /// * `attached_layer` (optional) - The next layer in the Network
+    /// * `cost` - Loss/error function
     fn back_prop(
         &mut self,
         actual: &Array1<f64>,
@@ -73,6 +89,13 @@ impl Layer {
         self.delta = self.activation_fn.prime(&self.activations) * &prev_delta;
     }
 
+    /// Adjusts the weights/biases of the Layer based on the calculated delta,
+    /// input vector, and chosen Optimization method
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - Numeric index of the current Layer's placement within the Network
+    /// * `optimizer` - Optimization method used to perform perform gradient descent
     fn update<'a>(&mut self, index: usize, optimizer: &mut (dyn Optimizer + 'a)) {
         let delta: Array2<f64> = self.delta.clone().insert_axis(Axis(1));
         let inputs: Array2<f64> = self.inputs.clone().insert_axis(Axis(0));
@@ -112,7 +135,9 @@ pub struct Network {
 }
 
 impl Network {
+    /// # Arguments:
     ///
+    /// * `cost` - Loss function for error reporting/backprop
     pub fn new(cost: Box<dyn Cost>) -> Network {
         Network {
             layers: vec![],
@@ -120,7 +145,15 @@ impl Network {
         }
     }
 
+    /// Creates a new layer and adds it to the Network. Used only for the
+    /// first layer added, which is treated as the input layer
     ///
+    /// # Arguments
+    ///
+    /// * `neurons` - Number of neurons, determines how many weights/biases
+    /// are present in the new Layer
+    /// * `inputs` - Size of expected the Layer's input vector
+    /// * `activation_fn` - Function that determines the activation of individual neurons
     fn add_input_layer(
         &mut self,
         neurons: usize,
@@ -130,6 +163,14 @@ impl Network {
         self.layers.push(Layer::new(neurons, inputs, activation_fn));
     }
 
+    /// Same as `add_input_layer`, but used for any other layer after. The number of
+    /// inputs for a hidden layer is equal to the number of neurons in the preceding layer
+    ///
+    /// # Arguments
+    ///
+    /// * `neurons` - Number of neurons, determines how many weights/biases
+    /// are present in the new Layer
+    /// * `activation_fn` - Function that determines the activation of individual neurons
     fn add_hidden_layer(&mut self, neurons: usize, activation_fn: Box<dyn ActivationFn>) {
         let prev_neurons = self.layers.last_mut().unwrap().neurons;
 
@@ -137,6 +178,15 @@ impl Network {
             .push(Layer::new(neurons, prev_neurons, activation_fn));
     }
 
+    /// Add a Layer to the next open spot in the Network's structure. This function
+    /// also dynamically expands the Network's overall size
+    ///
+    /// # Arguments
+    ///
+    /// * `neurons` - Number of neurons, determines how many weights/biases
+    /// are present in the new Layer
+    /// * `inputs` (optional) - Size of expected the Layer's input vector
+    /// * `activation_fn` - Function that determines the activation of individual neurons
     pub fn add_layer(
         &mut self,
         neurons: usize,
@@ -149,6 +199,18 @@ impl Network {
         }
     }
 
+    /// Trains the entire Network for a specified number of cycles. Training is
+    /// stopped when the given metric is satisfied based on the input/output
+    /// sets provided
+    ///
+    /// # Arguments
+    ///
+    /// * `inputs` - Set of all input vectors to train the Network on
+    /// * `outputs` - Set of corresponding output vectors
+    /// * `optimizer` - Optimization method used to perform perform gradient descent
+    /// * `metric` - Decides when the Network is performing 'good enough'
+    /// on the provided data
+    /// * `epochs` - Maximum number of training cycles
     pub fn fit(
         &mut self,
         inputs: &Vec<Array1<f64>>,
@@ -208,6 +270,12 @@ impl Network {
         errors
     }
 
+    /// Performs the feedforward step for all Layers to return the
+    /// Network's prediction for a given input vector
+    ///
+    /// # Arguments
+    ///
+    /// * `inputs` - Input vector
     pub fn predict(&mut self, inputs: &Array1<f64>) -> Array1<f64> {
         let mut output: Array1<f64> = inputs.to_owned();
 
