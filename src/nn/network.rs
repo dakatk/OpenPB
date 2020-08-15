@@ -102,7 +102,7 @@ impl Layer {
 
         let gradient: Array2<f64> = delta.dot(&inputs);
 
-        let delta_weights = -optimizer.delta(index, gradient);
+        let delta_weights = -optimizer.delta(index, &gradient);
         let delta_biases = -optimizer.learning_rate() * &self.delta;
         let weights: Array2<f64> = delta_weights + &self.weights;
         let biases: Array1<f64> = delta_biases + &self.biases;
@@ -224,6 +224,7 @@ impl Network {
             let mut samples: Vec<usize> = (0..inputs.len()).collect();
             let mut early_stop = true;
             samples.shuffle(&mut rng);
+            optimizer.next();
 
             for sample in samples {
                 let network_output: Array1<f64> = self.predict(&inputs[sample]);

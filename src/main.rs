@@ -30,7 +30,7 @@ fn main() {
     network.add_layer(8, Some(2), Box::new(Sigmoid {}));
     network.add_layer(1, None, Box::new(Sigmoid {}));
 
-    let optimizer = SGD::new(0.9, 0.01);
+    let optimizer = SGD::new(0.01);
     let metric = Accuracy::new(1);
 
     network.fit(

@@ -25,6 +25,7 @@ impl Accuracy {
     ///
     /// * `digits` - The number of digits after the decimal place
     /// that matter for accuracy checks. Should be no greater than 4
+    #[allow(dead_code)]
     pub fn new(digits: u8) -> Accuracy {
         Accuracy {
             tol: f64::powi(10., -(digits as i32)),
