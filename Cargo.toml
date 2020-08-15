@@ -13,8 +13,9 @@ openblas-src = { version = "^0.6.0", default-features = false, features = ["cbla
 ndarray-rand = "^0.11.0"
 
 [profile.dev]
-debug-level = 3
+debug = true
 opt-level = 1
 
 [profile.release]
+debug = false
 opt-level = 3

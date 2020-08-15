@@ -6,7 +6,7 @@ use nn::activations::Sigmoid;
 use nn::costs::MSE;
 use nn::metrics::Accuracy;
 use nn::network::Network;
-use nn::optimizers::SGD;
+use nn::optimizers::Adam;
 
 use ndarray::{Array, Array1};
 
@@ -30,7 +30,7 @@ fn main() {
     network.add_layer(8, Some(2), Box::new(Sigmoid {}));
     network.add_layer(1, None, Box::new(Sigmoid {}));
 
-    let optimizer = SGD::new(0.01);
+    let optimizer = Adam::new(0.002);
     let metric = Accuracy::new(1);
 
     network.fit(
