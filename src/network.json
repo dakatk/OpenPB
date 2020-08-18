@@ -1,0 +1,54 @@
+{
+    "inputs": [
+        [
+            0.0,
+            0.0
+        ],
+        [
+            0.0,
+            1.0
+        ],
+        [
+            1.0,
+            0.0
+        ],
+        [
+            1.0,
+            1.0
+        ]
+    ],
+    "outputs": [
+        [
+            0.0
+        ],
+        [
+            1.0
+        ],
+        [
+            1.0
+        ],
+        [
+            0.0
+        ]
+    ],
+    "cost": "MSE",
+    "layers": [
+        {
+            "neurons": 8,
+            "activation": "Sigmoid"
+        },
+        {
+            "neurons": 1,
+            "activation": "Sigmoid"
+        }
+    ],
+    "optimizer": {
+        "name": "Adam",
+        "learning_rate": 0.002
+    },
+    "metric": {
+        "name": "Accuracy",
+        "epsilon": 0.2
+    },
+    "epochs": 10000
+}

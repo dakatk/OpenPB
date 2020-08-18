@@ -17,7 +17,7 @@ pub trait Metric {
 /// to a certain number of decimal places
 pub struct Accuracy {
     /// Tolerance for representing the "approximately equal to" factor
-    tol: f64,
+    epsilon: f64,
 }
 
 impl Accuracy {
@@ -26,15 +26,13 @@ impl Accuracy {
     /// * `digits` - The number of digits after the decimal place
     /// that matter for accuracy checks. Should be no greater than 4
     #[allow(dead_code)]
-    pub fn new(digits: u8) -> Accuracy {
-        Accuracy {
-            tol: f64::powi(10., -(digits as i32)),
-        }
+    pub fn new(epsilon: f64) -> Accuracy {
+        Accuracy { epsilon: epsilon }
     }
 }
 
 impl Metric for Accuracy {
     fn call(&self, o: &Array1<f64>, y: &Array1<f64>) -> bool {
-        o.abs_diff_eq(y, self.tol)
+        o.abs_diff_eq(y, self.epsilon)
     }
 }

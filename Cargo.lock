@@ -135,7 +135,7 @@ checksum = "af5265a3d795f0624d3e3756cb484da70f8bfbf409ce23d9035ffc8574297aad"
 
 [[package]]
 name = "perceptron_cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "approx",
  "blas-src",

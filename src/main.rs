@@ -31,7 +31,7 @@ fn main() {
     network.add_layer(1, None, Box::new(Sigmoid {}));
 
     let optimizer = Adam::new(0.002);
-    let metric = Accuracy::new(1);
+    let metric = Accuracy::new(0.2);
 
     network.fit(
         &inputs,
