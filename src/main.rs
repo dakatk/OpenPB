@@ -11,9 +11,7 @@ use std::env;
 use std::fs;
 
 #[doc(hidden)]
-
 fn main() -> Result<(), String> {
-
     let args: Vec<String> = env::args().collect();
 
     let filename = match args.len() {
@@ -42,22 +40,15 @@ fn main() -> Result<(), String> {
             "epochs",
         ]
     ) {
-
         return Err("Invalid JSON file (missing required keys)".to_string());
     }
 
     let input_json = network_json["input"].as_object().unwrap();
-
     let output_json = network_json["output"].as_object().unwrap();
-
     let cost_json = network_json["cost"].as_str().unwrap();
-
     let layers_json = network_json["hidden_layers"].as_array().unwrap();
-
     let optimizer_json = network_json["optimizer"].as_object().unwrap();
-
     let metric_json = network_json["metric"].as_object().unwrap();
-
     let epochs_json = network_json["epochs"].as_u64().unwrap();
 
     let mut network = match parse_json::get_cost_fn(cost_json.to_string()) {
@@ -82,7 +73,6 @@ fn main() -> Result<(), String> {
     );
 
     for layer in layers_json.iter() {
-
         let layer_values = match parse_json::get_layer(layer) {
             Ok(layer) => layer,
             Err(msg) => return Err(msg)
@@ -106,7 +96,6 @@ fn main() -> Result<(), String> {
     network.fit(&input.data, &output.data, optimizer, metric, epochs_json);
 
     for (input, output) in input.data.iter().zip(output.data) {
-
         println!("{}: {} {}", input, network.predict(input), output);
     }
 

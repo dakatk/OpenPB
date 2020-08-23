@@ -1,4 +1,5 @@
 binop_separator = "Back"
-blank_lines_lower_bound = 1
+blank_lines_lower_bound = 0
 edition = "2018"
+single_line_if_else_max_width = 100
 trailing_comma = "Never"
