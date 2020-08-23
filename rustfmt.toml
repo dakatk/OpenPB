@@ -1,0 +1,4 @@
+binop_separator = "Back"
+blank_lines_lower_bound = 1
+edition = "2018"
+trailing_comma = "Never"
