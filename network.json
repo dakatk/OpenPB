@@ -1,6 +1,7 @@
 {
     "input": {
         "neurons": 8,
+        "activation": "sigmoid",
         "size": 2,
         "data": [
             [
@@ -23,6 +24,7 @@
     },
     "output": {
         "activation": "sigmoid",
+        "size": 1,
         "data": [
             [
                 0.0
@@ -41,7 +43,7 @@
     "cost": "mse",
     "hidden_layers": [
         {
-            "neurons": 8,
+            "neurons": 2,
             "activation": "sigmoid"
         }
     ],

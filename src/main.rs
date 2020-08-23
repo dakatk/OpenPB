@@ -57,6 +57,8 @@ fn main() -> Result<(), String> {
         Err(msg) => return Err(msg),
     };
 
+    network.add_layer(input.neurons as usize, Some(input.size as usize), input.activation);
+
     for layer in layers_json.iter() {
         let layer_values = match parse_json::get_layer(layer) {
             Ok(layer) => layer,
@@ -65,6 +67,8 @@ fn main() -> Result<(), String> {
 
         network.add_layer(layer_values.neurons as usize, None, layer_values.activation);
     }
+
+    network.add_layer(output.size as usize, None, output.activation);
 
     let optimizer = match parse_json::get_optimizer(optimizer_json) {
         Ok(optimizer) => optimizer,

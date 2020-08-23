@@ -14,12 +14,14 @@ pub struct LayerValues {
 
 pub struct InputValues {
     pub neurons: u64,
+    pub activation: Box<dyn ActivationFn>,
     pub size: u64,
     pub data: Vec<Array1<f64>>,
 }
 
 pub struct OutputValues {
     pub activation: Box<dyn ActivationFn>,
+    pub size: u64,
     pub data: Vec<Array1<f64>>,
 }
 
@@ -53,6 +55,17 @@ pub fn get_input(args: &Map<String, Value>) -> Result<InputValues, String> {
         None => return Err("Missing field 'neurons' from input".to_string()),
     };
 
+    let activation = match args["activation"].as_str() {
+        Some(activation) => activation,
+        None => return Err("Missing field 'activation' from layer".to_string()),
+    };
+
+    let activation_fn: Box<dyn ActivationFn> = match activation.to_lowercase().as_str() {
+        "sigmoid" => Box::new(Sigmoid),
+        "relu" => Box::new(ReLu),
+        _ => return Err("Invalid activation function name".to_string()),
+    };
+
     let size = match args["size"].as_u64() {
         Some(size) => size,
         None => return Err("Missing field 'size' from input".to_string()),
@@ -65,6 +78,7 @@ pub fn get_input(args: &Map<String, Value>) -> Result<InputValues, String> {
 
     Ok(InputValues {
         neurons: neurons,
+        activation: activation_fn,
         size: size,
         data: values_to_f64_array(data),
     })
@@ -82,6 +96,11 @@ pub fn get_output(args: &Map<String, Value>) -> Result<OutputValues, String> {
         _ => return Err("Invalid activation function name".to_string()),
     };
 
+    let size = match args["size"].as_u64() {
+        Some(size) => size,
+        None => return Err("Missing field 'size' from input".to_string()),
+    };
+
     let data = match args["data"].as_array() {
         Some(data) => data,
         None => return Err("Missing field 'data' from input".to_string()),
@@ -89,6 +108,7 @@ pub fn get_output(args: &Map<String, Value>) -> Result<OutputValues, String> {
 
     Ok(OutputValues {
         activation: activation_fn,
+        size: size,
         data: values_to_f64_array(data),
     })
 }
