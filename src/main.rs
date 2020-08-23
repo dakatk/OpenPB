@@ -7,14 +7,22 @@ use nn::network::Network;
 
 use serde_json::Value;
 
+use std::env;
 use std::fs;
 
 #[doc(hidden)]
 fn main() -> Result<(), String> {
+    let args: Vec<String> = env::args().collect();
+
+    let filename = match args.len() {
+        2 => args[1].to_string(),
+        _ => return Err("Incorrect number of args".to_string()),
+    };
+
     let file_contents: String;
-    match fs::read_to_string("network.json") {
+    match fs::read_to_string(&filename) {
         Ok(result) => file_contents = result,
-        Err(_) => return Err("network.json missing or corrupted".to_string()),
+        Err(_) => return Err(format!("'{}' missing or corrupted", filename).to_string()),
     };
 
     let network_json: Value = serde_json::from_str(&file_contents).unwrap();
@@ -57,7 +65,11 @@ fn main() -> Result<(), String> {
         Err(msg) => return Err(msg),
     };
 
-    network.add_layer(input.neurons as usize, Some(input.size as usize), input.activation);
+    network.add_layer(
+        input.neurons as usize,
+        Some(input.size as usize),
+        input.activation,
+    );
 
     for layer in layers_json.iter() {
         let layer_values = match parse_json::get_layer(layer) {
