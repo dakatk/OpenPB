@@ -26,7 +26,7 @@ pub struct Accuracy {
 impl Accuracy {
     /// # Arguments
     ///
-    /// * `epsilon` - The delta for used to check accuracy 
+    /// * `epsilon` - The delta for used to check accuracy
     /// between two values
     #[allow(dead_code)]
     pub fn new(params: &Map<String, Value>) -> Accuracy {
