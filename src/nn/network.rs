@@ -217,7 +217,7 @@ impl Network {
         outputs: &Vec<Array1<f64>>,
         mut optimizer: Box<dyn Optimizer>,
         metric: Box<dyn Metric>,
-        epochs: usize,
+        epochs: u64,
     ) -> Vec<Array1<f64>> {
         let mut rng = thread_rng();
         for epoch in 0..epochs {

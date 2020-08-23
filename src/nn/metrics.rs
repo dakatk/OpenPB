@@ -1,6 +1,9 @@
 use approx::AbsDiffEq;
 use ndarray::Array1;
 
+use serde_json::Map;
+use serde_json::Value;
+
 /// Defines a way to check how well our Network has fit te data so far.
 /// Used in the Network fit function to determine early stopping conditions
 pub trait Metric {
@@ -23,10 +26,11 @@ pub struct Accuracy {
 impl Accuracy {
     /// # Arguments
     ///
-    /// * `digits` - The number of digits after the decimal place
-    /// that matter for accuracy checks. Should be no greater than 4
+    /// * `epsilon` - The delta for used to check accuracy 
+    /// between two values
     #[allow(dead_code)]
-    pub fn new(epsilon: f64) -> Accuracy {
+    pub fn new(params: &Map<String, Value>) -> Accuracy {
+        let epsilon: f64 = params["epsilon"].as_f64().unwrap();
         Accuracy { epsilon: epsilon }
     }
 }

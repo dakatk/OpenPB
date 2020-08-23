@@ -1,54 +1,59 @@
 {
-    "inputs": [
-        [
-            0.0,
-            0.0
-        ],
-        [
-            0.0,
-            1.0
-        ],
-        [
-            1.0,
-            0.0
-        ],
-        [
-            1.0,
-            1.0
+    "input": {
+        "neurons": 8,
+        "size": 2,
+        "data": [
+            [
+                0.0,
+                0.0
+            ],
+            [
+                0.0,
+                1.0
+            ],
+            [
+                1.0,
+                0.0
+            ],
+            [
+                1.0,
+                1.0
+            ]
         ]
-    ],
-    "outputs": [
-        [
-            0.0
-        ],
-        [
-            1.0
-        ],
-        [
-            1.0
-        ],
-        [
-            0.0
+    },
+    "output": {
+        "activation": "sigmoid",
+        "data": [
+            [
+                0.0
+            ],
+            [
+                1.0
+            ],
+            [
+                1.0
+            ],
+            [
+                0.0
+            ]
         ]
-    ],
-    "cost": "MSE",
-    "layers": [
+    },
+    "cost": "mse",
+    "hidden_layers": [
         {
             "neurons": 8,
-            "activation": "Sigmoid"
-        },
-        {
-            "neurons": 1,
-            "activation": "Sigmoid"
+            "activation": "sigmoid"
         }
     ],
     "optimizer": {
-        "name": "Adam",
+        "name": "adam",
         "learning_rate": 0.002
     },
     "metric": {
-        "name": "Accuracy",
-        "epsilon": 0.2
+        "name": "accuracy",
+        "args": {
+            "epsilon": 0.2
+        }
     },
     "epochs": 10000
 }

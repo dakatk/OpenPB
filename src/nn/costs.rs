@@ -9,7 +9,7 @@ pub trait Cost {
     /// * `o` - Actual values
     /// * `y` - Expected values
     fn prime(&self, o: &Array1<f64>, y: &Array1<f64>) -> Array1<f64>;
-    /// Clones this trait when boxed in lieu of copying
+    /// Create a clone of a boxed instance of this trait
     fn box_clone(&self) -> Box<dyn Cost>;
 }
 

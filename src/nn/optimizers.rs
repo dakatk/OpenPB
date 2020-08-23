@@ -67,13 +67,13 @@ impl Optimizer for SGD {
 }
 
 pub struct Adam {
-    ///
+    /// 
     time_step: u16,
-    ///
+    /// 
     learning_rate: f64,
-    ///
+    /// 
     velocities: Vec<Array2<f64>>,
-    ///
+    /// 
     moments: Vec<Array2<f64>>,
 }
 

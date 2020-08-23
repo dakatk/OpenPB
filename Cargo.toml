@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 rand = "^0.7.3"
 approx = "^0.3.2"
+serde_json = "^1.0.57"
 ndarray = { version = "^0.13.1", default-features = false, features = ["blas", "approx"] }
 blas-src = { version = "^0.2.0", default-features = false, features = ["accelerate"] }
 openblas-src = { version = "^0.6.0", default-features = false, features = ["cblas", "system"] }
