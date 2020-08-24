@@ -1,5 +1,9 @@
 use ndarray::{Array, Array2};
 
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+use rand::rngs::ThreadRng;
+
 // TODO 'next' function should produce an index based on size of inputs/ouputs
 
 /// Momentum constant
@@ -17,7 +21,7 @@ pub trait Optimizer {
 
     /// Produces the next index based on the size of the inputs
     /// and the current time step
-    fn next(&mut self);
+    fn next(&mut self, input_size: usize) -> Vec<usize>;
 
     /// Returns the calculated adjustment factor for the Network's
     /// weights after a single step of training
@@ -32,6 +36,9 @@ pub trait Optimizer {
 
 /// Stochastic Gradient Descent optimizer
 pub struct SGD {
+
+    /// Random number generator for getting next sample
+    rng: ThreadRng,
 
     /// The step size when adjusting weights for each call of gradient descent
     learning_rate: f64,
@@ -49,6 +56,7 @@ impl SGD {
     #[allow(dead_code)]
     pub fn new(learning_rate: f64) -> SGD {
         SGD {
+            rng: thread_rng(),
             learning_rate: learning_rate,
             velocities: vec![]
         }
@@ -60,7 +68,12 @@ impl Optimizer for SGD {
         self.learning_rate
     }
 
-    fn next(&mut self) {}
+    fn next(&mut self, input_size: usize) -> Vec<usize> {
+        let mut samples: Vec<usize> = (0..input_size).collect();
+
+        samples.shuffle(&mut self.rng);
+        samples
+    }
 
     fn delta(&mut self, index: usize, gradient: &Array2<f64>) -> Array2<f64> {
         if self.velocities.len() <= index {
@@ -110,8 +123,9 @@ impl Optimizer for Adam {
         self.learning_rate
     }
 
-    fn next(&mut self) {
+    fn next(&mut self, input_size: usize) -> Vec<usize> {
         self.time_step += 1;
+        (0..input_size).collect()
     }
 
     fn delta(&mut self, index: usize, gradient: &Array2<f64>) -> Array2<f64> {

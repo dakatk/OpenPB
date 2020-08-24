@@ -7,9 +7,6 @@ use ndarray::{Array, Array1, Array2, Axis};
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 
-use rand::seq::SliceRandom;
-use rand::thread_rng;
-
 /// A single Layer in the Network
 struct Layer {
 
@@ -230,14 +227,9 @@ impl Network {
         metric: Box<dyn Metric>,
         epochs: u64
     ) -> Vec<Array1<f64>> {
-        let mut rng = thread_rng();
-
         for epoch in 1..=epochs {
-            let mut samples: Vec<usize> = (0..inputs.len()).collect();
             let mut early_stop = true;
-
-            samples.shuffle(&mut rng);
-            optimizer.next();
+            let samples = optimizer.next(inputs.len());
 
             for sample in samples {
                 let network_output: Array1<f64> = self.predict(&inputs[sample]);
@@ -249,7 +241,6 @@ impl Network {
                     {
                         attached_layer = if i < len - 1 {
                             let layer = self.layers[i + 1].clone();
-
                             Some(layer)
                         } else {
                             None
@@ -275,7 +266,6 @@ impl Network {
 
             if early_stop {
                 println!("ended on epoch {}", epoch);
-
                 break;
             }
         }
