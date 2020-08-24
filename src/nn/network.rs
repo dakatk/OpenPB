@@ -232,7 +232,7 @@ impl Network {
     ) -> Vec<Array1<f64>> {
         let mut rng = thread_rng();
 
-        for epoch in 0..epochs {
+        for epoch in 1..=epochs {
             let mut samples: Vec<usize> = (0..inputs.len()).collect();
             let mut early_stop = true;
 

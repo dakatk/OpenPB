@@ -1,9 +1,11 @@
 use ndarray::{Array, Array2};
 
-/// 
+// TODO 'next' function should produce an index based on size of inputs/ouputs
+
+/// Momentum constant
 const BETA_1: f64 = 0.9;
 
-/// 
+/// Secondary momentum constant
 const BETA_2: f64 = 0.999;
 
 /// Optimizer functions that's used to determine how a Network's weights should be
@@ -13,7 +15,8 @@ pub trait Optimizer {
     /// Exposes the `learning_rate` property for all Optimizers
     fn learning_rate(&self) -> f64;
 
-    /// 
+    /// Produces the next index based on the size of the inputs
+    /// and the current time step
     fn next(&mut self);
 
     /// Returns the calculated adjustment factor for the Network's
@@ -41,9 +44,7 @@ pub struct SGD {
 impl SGD {
 
     /// # Arguments
-    ///
-    /// * `momentum` - The momentum constant for adjusting the velocities using classic
-    /// momentum for gradient descent. Should be less than 1, 0.9 is the ideal value
+    /// 
     /// * `learning_rate` - The step size when adjusting weights for each call of gradient descent
     #[allow(dead_code)]
     pub fn new(learning_rate: f64) -> SGD {
