@@ -72,7 +72,7 @@ pub fn get_input(args: &Map<String, Value>) -> Result<InputValues, String> {
 
     let activation_fn: Box<dyn ActivationFn> = match activation.to_lowercase().as_str() {
         "sigmoid" => Box::new(Sigmoid),
-        "relu" => Box::new(ReLu),
+        "relu" => Box::new(ReLU),
         _ => return Err("Invalid activation function name".to_string())
     };
 
@@ -103,7 +103,7 @@ pub fn get_output(args: &Map<String, Value>) -> Result<OutputValues, String> {
 
     let activation_fn: Box<dyn ActivationFn> = match activation.to_lowercase().as_str() {
         "sigmoid" => Box::new(Sigmoid),
-        "relu" => Box::new(ReLu),
+        "relu" => Box::new(ReLU),
         _ => return Err("Invalid activation function name".to_string())
     };
 
@@ -154,7 +154,7 @@ pub fn get_layer(args: &Value) -> Result<LayerValues, String> {
 
     let activation_fn: Box<dyn ActivationFn> = match activation.to_lowercase().as_str() {
         "sigmoid" => Box::new(Sigmoid),
-        "relu" => Box::new(ReLu),
+        "relu" => Box::new(ReLU),
         _ => return Err("Invalid activation function name".to_string())
     };
 
