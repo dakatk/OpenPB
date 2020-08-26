@@ -56,12 +56,12 @@ fn main() -> Result<(), String> {
         Err(msg) => return Err(msg)
     };
 
-    let input = match parse_json::get_input(input_json) {
+    let input = match parse_json::get_input_data(input_json) {
         Ok(input) => input,
         Err(msg) => return Err(msg)
     };
 
-    let output = match parse_json::get_output(output_json) {
+    let output = match parse_json::get_output_data(output_json) {
         Ok(output) => output,
         Err(msg) => return Err(msg)
     };

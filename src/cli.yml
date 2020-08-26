@@ -1,0 +1,17 @@
+name: Open Neural Network Benchmarker
+version: "1.0"
+auther: Dusten Knull <dakatk97@gmail.com>
+about: Test, evaluate, and generally benchmark NN structures and data
+args:
+  - data:
+    short: d
+    long: data
+    value_name: JSON_FILE
+    help: JSON file with I/O matrices
+    required: true
+  - network:
+    short: 'n'
+    long: network
+    value_name: JSON_FILE
+    help: JSON file with network structure definitions
+    required: true

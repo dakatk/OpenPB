@@ -59,7 +59,7 @@ pub fn has_keys(json: &Value, keys: Vec<&str>) -> bool {
 }
 
 /// 
-pub fn get_input(args: &Map<String, Value>) -> Result<InputValues, String> {
+pub fn get_input_data(args: &Map<String, Value>) -> Result<InputValues, String> {
     let neurons = match args["neurons"].as_u64() {
         Some(neurons) => neurons,
         None => return Err("Missing field 'neurons' from input".to_string())
@@ -95,7 +95,7 @@ pub fn get_input(args: &Map<String, Value>) -> Result<InputValues, String> {
 }
 
 /// 
-pub fn get_output(args: &Map<String, Value>) -> Result<OutputValues, String> {
+pub fn get_output_data(args: &Map<String, Value>) -> Result<OutputValues, String> {
     let activation = match args["activation"].as_str() {
         Some(activation) => activation,
         None => return Err("Missing field 'activation' from layer".to_string())
