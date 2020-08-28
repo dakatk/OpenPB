@@ -18,5 +18,3 @@ jobs:
     - uses: actions/checkout@v2
     - name: cargo build
       run: cargo build --verbose
-    - name: cargo clippy
-      run: cargo clippy --verbose
