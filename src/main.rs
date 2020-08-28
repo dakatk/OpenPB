@@ -3,18 +3,28 @@
 mod nn;
 mod parse_json;
 
-#[macro_use]
-extern crate clap;
-
 use nn::network::Network;
 use serde_json::Value;
-use clap::App;
+use clap::{Arg, App};
 use std::fs;
 
 #[doc(hidden)]
 fn main() -> Result<(), String> {
-    let yaml_cli = load_yaml!("cli.yml");
-    let args = App::from_yaml(yaml_cli).get_matches();
+    let args = App::new("Open Neural Network Benchmarker (ONNB)")
+                        .version("0.1")
+                        .author("Dusten Knull <dakatk97@gmail.com>")
+                        .arg(Arg::with_name("data")
+                            .short("d")
+                            .long("data")
+                            .value_name("JSON_FILE")
+                            .required(true)
+                        )
+                        .arg(Arg::with_name("network")
+                            .short("n")
+                            .long("network")
+                            .value_name("JSON_FILE")
+                            .required(true)
+                        ).get_matches();
 
     let network_filename: &str = args.value_of("network").unwrap();
     let data_filename: &str = args.value_of("data").unwrap();
