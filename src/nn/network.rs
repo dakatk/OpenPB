@@ -1,4 +1,4 @@
-use crate::nn::activations::{ActivationFn, ActivationDe};
+use crate::nn::activations::{ActivationFn};
 use crate::nn::costs::Cost;
 use crate::nn::metrics::Metric;
 use crate::nn::optimizers::Optimizer;
@@ -8,9 +8,6 @@ use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 
 use serde::ser::{Serialize, Serializer, SerializeStruct};
-use serde::de::{Deserialize, Deserializer, Error, SeqAccess, Visitor};
-
-use std::fmt;
 
 /// A single Layer in the Network
 struct Layer {
@@ -135,45 +132,6 @@ impl Serialize for Layer {
         s.serialize_field("biases", &self.biases)?;
 
         s.end()
-    }
-}
-
-impl<'de> Deserialize<'de> for Layer {
-    
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where D: Deserializer<'de> {
-
-        struct LayerVisitor;
-
-        impl<'de> Visitor<'de> for LayerVisitor {
-            type Value = Layer;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("struct Layer")
-            }
-
-            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error> 
-            where A: SeqAccess<'de> {
-                let neurons = match seq.next_element()? {
-                    Some(value) => value,
-                    None => {
-                        return Err(Error::invalid_length(0, &self));
-                    }
-                };
-
-                let activation = match seq.next_element()? {
-                    Some(value) => ActivationDe::deserialize(value),
-                    None => {
-                        return Err(Error::invalid_length(1, &self));
-                    }
-                };
-
-                Ok(Layer {})
-            } 
-        }
-
-        const FIELDS: &'static [&'static str] = &["neurons", "activation"];
-        deserializer.deserialize_struct("Layer", FIELDS, LayerVisitor)
     }
 }
 

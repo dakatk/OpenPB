@@ -1,56 +1,5 @@
 use ndarray::Array1;
 
-use serde::de::{Deserialize, Deserializer, Error, Unexpected, Visitor};
-
-use std::fmt;
-use std::str;
-
-pub struct ActivationDe {
-    activationFn: Box<dyn ActivationFn>
-}
-
-impl<'de> Deserialize<'de> for ActivationDe {
-    
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where D: Deserializer<'de> {
-        struct StrVisitor;
-
-        impl<'a> Visitor<'a> for StrVisitor {
-            type Value = &'a str;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a borrowed string")
-            }
-
-            fn visit_borrowed_str<E>(self, v: &'a str) -> Result<Self::Value, E>
-            where E: Error
-            {   
-                Ok(v)
-            }
-
-            fn visit_borrowed_bytes<E>(self, v: &'a [u8]) -> Result<Self::Value, E>
-            where E: Error
-            {
-                str::from_utf8(v).map_err(|_| Error::invalid_value(Unexpected::Bytes(v), &self))
-            }
-        }
-
-        const VARIANTS: &'static [&'static str] = &["sigmoid", "relu", "leakyrelu"];
-        
-        let activationName = deserializer.deserialize_str(StrVisitor)?;
-        let activationFn: Box<dyn ActivationFn> = match activationName.to_lowercase().as_str() {
-            "sigmoid" => Box::new(Sigmoid),
-            "relu" => Box::new(ReLU),
-            "leakyrelu" => Box::new(LeakyReLU),
-            _ => {
-                return Err(Error::unknown_variant(activationName, VARIANTS));
-            }
-        };
-
-        Ok(ActivationDe { activationFn })
-    }
-}
-
 /// Neuron activation function used for feed forward
 /// and backprop methods in Network training
 pub trait ActivationFn {
