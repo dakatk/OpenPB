@@ -1,4 +1,4 @@
-use crate::nn::activations::ActivationFn;
+use crate::nn::activations::{ActivationFn, ActivationDe};
 use crate::nn::costs::Cost;
 use crate::nn::metrics::Metric;
 use crate::nn::optimizers::Optimizer;
@@ -162,13 +162,13 @@ impl<'de> Deserialize<'de> for Layer {
                 };
 
                 let activation = match seq.next_element()? {
-                    Some(value) => Activation::deserialize(value),
+                    Some(value) => ActivationDe::deserialize(value),
                     None => {
                         return Err(Error::invalid_length(1, &self));
                     }
                 };
 
-                Ok(Layer {});
+                Ok(Layer {})
             } 
         }
 
