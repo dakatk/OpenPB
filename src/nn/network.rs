@@ -7,6 +7,11 @@ use ndarray::{Array, Array1, Array2, Axis};
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 
+use serde::ser::{Serialize, Serializer, SerializeStruct};
+use serde::de::{Deserialize, Deserializer, Error, SeqAccess, Visitor};
+
+use std::fmt;
+
 /// A single Layer in the Network
 struct Layer {
 
@@ -68,15 +73,6 @@ impl Layer {
         self.activation_fn.call(&activations)
     }
 
-    /// Backprop step for an individual Layer. Used for adjusting weights/biases
-    /// based on the rror of the predicted outputs from the Layer's feedforward step
-    ///
-    /// # Arguments
-    ///
-    /// * `actual` - Predicted output values
-    /// * `expected` - Target output values
-    /// * `attached_layer` (optional) - The next layer in the Network
-    /// * `cost` - Loss/error function
     fn back_prop(
         &mut self,
         actual: &Array1<f64>,
@@ -128,6 +124,56 @@ impl Clone for Layer {
             neurons: self.neurons,
             activation_fn: self.activation_fn.box_clone()
         }
+    }
+}
+
+impl Serialize for Layer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where S: Serializer {
+        let mut s = serializer.serialize_struct("Layer", 2)?;
+        s.serialize_field("weights", &self.weights)?;
+        s.serialize_field("biases", &self.biases)?;
+
+        s.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for Layer {
+    
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where D: Deserializer<'de> {
+
+        struct LayerVisitor;
+
+        impl<'de> Visitor<'de> for LayerVisitor {
+            type Value = Layer;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Layer")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error> 
+            where A: SeqAccess<'de> {
+                let neurons = match seq.next_element()? {
+                    Some(value) => value,
+                    None => {
+                        return Err(Error::invalid_length(0, &self));
+                    }
+                };
+
+                let activation = match seq.next_element()? {
+                    Some(value) => Activation::deserialize(value),
+                    None => {
+                        return Err(Error::invalid_length(1, &self));
+                    }
+                };
+
+                Ok(Layer {});
+            } 
+        }
+
+        const FIELDS: &'static [&'static str] = &["neurons", "activation"];
+        deserializer.deserialize_struct("Layer", FIELDS, LayerVisitor)
     }
 }
 

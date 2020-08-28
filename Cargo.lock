@@ -168,6 +168,7 @@ dependencies = [
  "ndarray",
  "ndarray-rand",
  "rand",
+ "serde",
  "serde_json",
 ]
 
