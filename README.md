@@ -1,4 +1,4 @@
-![Build](https://github.com/dakatk/rust-nn-cli/workflows/Build/badge.svg)
+![Build](https://github.com/dakatk/rust-nn-cli/workflows/Build/badge.svg?branch=master)
 
 # Open Neural Network Benchmarker
 
