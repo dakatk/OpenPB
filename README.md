@@ -1,3 +1,5 @@
+![Build](https://github.com/dakatk/rust-nn-cli/workflows/Build/badge.svg)
+
 # Open Neural Network Benchmarker
 
 This is the Open Neural Network Benchmarker, or ONNB, which is a command-line application written for the sole purpose of testing various neural network setups. The goal of this project is to make Neural Network assessment simple and flexible. 
