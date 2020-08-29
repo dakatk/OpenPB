@@ -51,8 +51,7 @@ impl Layer {
             inputs: Array::zeros(inputs),
             activations: Array::zeros(neurons),
             delta: Array::zeros(neurons),
-            neurons: neurons,
-            activation_fn: activation_fn
+            neurons, activation_fn
         }
     }
 
@@ -152,8 +151,7 @@ impl Network {
     /// * `cost` - Loss function for error reporting/backprop
     pub fn new(cost: Box<dyn Cost>) -> Network {
         Network {
-            layers: vec![],
-            cost: cost
+            layers: vec![], cost
         }
     }
 

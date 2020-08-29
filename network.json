@@ -2,7 +2,7 @@
     "cost": "mse",
     "hidden_layers": [
         {
-            "neurons": 8,
+            "neurons": 4,
             "activation": "sigmoid"
         }
     ],

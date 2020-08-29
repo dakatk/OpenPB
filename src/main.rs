@@ -34,12 +34,12 @@ fn main() -> Result<(), String> {
 
     match fs::read_to_string(&network_filename) {
         Ok(result) => network_contents = result,
-        Err(_) => return Err(format!("'{}' missing or corrupted", network_filename).to_string())
+        Err(_) => return Err(format!("'{}' missing or corrupted", network_filename))
     };
 
     match fs::read_to_string(&data_filename) {
         Ok(result) => data_contents = result,
-        Err(_) => return Err(format!("'{}' missing or corrupted", data_filename).to_string())
+        Err(_) => return Err(format!("'{}' missing or corrupted", data_filename))
     };
 
     let network_json: Value = serde_json::from_str(&network_contents).expect("Failed to parse JSON contents from network file");
@@ -90,7 +90,7 @@ fn main() -> Result<(), String> {
     network.add_layer(
         input.neurons as usize,
         Some(input.size as usize),
-        input.activation
+        input.activation_fn
     );
 
     for layer in layers_json.iter() {
@@ -99,10 +99,10 @@ fn main() -> Result<(), String> {
             Err(msg) => return Err(msg)
         };
 
-        network.add_layer(layer_values.neurons as usize, None, layer_values.activation);
+        network.add_layer(layer_values.neurons as usize, None, layer_values.activation_fn);
     }
 
-    network.add_layer(output.size as usize, None, output.activation);
+    network.add_layer(output.size as usize, None, output.activation_fn);
 
     let optimizer = match parse_json::get_optimizer(optimizer_json) {
         Ok(optimizer) => optimizer,

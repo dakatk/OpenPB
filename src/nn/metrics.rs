@@ -35,7 +35,7 @@ impl Accuracy {
     pub fn new(params: &Map<String, Value>) -> Accuracy {
         let epsilon: f64 = params["epsilon"].as_f64().unwrap();
 
-        Accuracy { epsilon: epsilon }
+        Accuracy { epsilon }
     }
 }
 

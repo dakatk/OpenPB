@@ -14,7 +14,7 @@ pub struct LayerValues {
     pub neurons: u64,
 
     /// 
-    pub activation: Box<dyn ActivationFn>
+    pub activation_fn: Box<dyn ActivationFn>
 }
 
 /// 
@@ -24,7 +24,7 @@ pub struct InputValues {
     pub neurons: u64,
 
     /// 
-    pub activation: Box<dyn ActivationFn>,
+    pub activation_fn: Box<dyn ActivationFn>,
 
     /// 
     pub size: u64,
@@ -37,7 +37,7 @@ pub struct InputValues {
 pub struct OutputValues {
 
     /// 
-    pub activation: Box<dyn ActivationFn>,
+    pub activation_fn: Box<dyn ActivationFn>,
 
     /// 
     pub size: u64,
@@ -87,9 +87,9 @@ pub fn get_input_data(args: &Map<String, Value>) -> Result<InputValues, String> 
     };
 
     Ok(InputValues {
-        neurons: neurons,
-        activation: activation_fn,
-        size: size,
+        neurons,
+        activation_fn,
+        size,
         data: values_to_f64_array(data)
     })
 }
@@ -118,7 +118,7 @@ pub fn get_output_data(args: &Map<String, Value>) -> Result<OutputValues, String
     };
 
     Ok(OutputValues {
-        activation: activation_fn,
+        activation_fn,
         size: size,
         data: values_to_f64_array(data)
     })
@@ -127,11 +127,11 @@ pub fn get_output_data(args: &Map<String, Value>) -> Result<OutputValues, String
 #[doc(hidden)]
 fn values_to_f64_array(values: &Vec<Value>) -> Vec<Array1<f64>> {
     fn value_vec_to_f64_vec(value: &Vec<Value>) -> Vec<f64> {
-        value.into_iter().map(|el| el.as_f64().unwrap()).collect()
+        value.iter().map(|el| el.as_f64().unwrap()).collect()
     }
 
     values
-        .into_iter()
+        .iter()
         .map(|el| {
             let as_vec = value_vec_to_f64_vec(el.as_array().unwrap());
 
@@ -159,8 +159,8 @@ pub fn get_layer(args: &Value) -> Result<LayerValues, String> {
     };
 
     Ok(LayerValues {
-        neurons: neurons,
-        activation: activation_fn
+        neurons,
+        activation_fn
     })
 }
 

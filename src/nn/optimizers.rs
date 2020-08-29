@@ -57,7 +57,7 @@ impl SGD {
     pub fn new(learning_rate: f64) -> SGD {
         SGD {
             rng: thread_rng(),
-            learning_rate: learning_rate,
+            learning_rate,
             velocities: vec![]
         }
     }
@@ -111,7 +111,7 @@ impl Adam {
     pub fn new(learning_rate: f64) -> Adam {
         Adam {
             time_step: 0,
-            learning_rate: learning_rate,
+            learning_rate,
             velocities: vec![],
             moments: vec![]
         }

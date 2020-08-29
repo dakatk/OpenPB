@@ -46,11 +46,11 @@ fn sigmoid_prime(x: f64) -> f64 {
 
 impl ActivationFn for Sigmoid {
     fn call(&self, x: &Array1<f64>) -> Array1<f64> {
-        x.mapv(|el| sigmoid(el))
+        x.mapv(sigmoid)
     }
 
     fn prime(&self, x: &Array1<f64>) -> Array1<f64> {
-        x.mapv(|el| sigmoid_prime(el))
+        x.mapv(sigmoid_prime)
     }
 
     fn box_clone(&self) -> Box<dyn ActivationFn> {
@@ -83,11 +83,11 @@ fn relu_prime(x: f64) -> f64 {
 
 impl ActivationFn for ReLU {
     fn call(&self, x: &Array1<f64>) -> Array1<f64> {
-        x.mapv(|el| relu(el))
+        x.mapv(relu)
     }
 
     fn prime(&self, x: &Array1<f64>) -> Array1<f64> {
-        x.mapv(|el| relu_prime(el))
+        x.mapv(relu_prime)
     }
 
     fn box_clone(&self) -> Box<dyn ActivationFn> {
@@ -120,11 +120,11 @@ fn leaky_relu_prime(x: f64) -> f64 {
 
 impl ActivationFn for LeakyReLU {
     fn call(&self, x: &Array1<f64>) -> Array1<f64> {
-        x.mapv(|el| leaky_relu(el))
+        x.mapv(leaky_relu)
     }
 
     fn prime(&self, x: &Array1<f64>) -> Array1<f64> {
-        x.mapv(|el| leaky_relu_prime(el))
+        x.mapv(leaky_relu_prime)
     }
 
     fn box_clone(&self) -> Box<dyn ActivationFn> {
