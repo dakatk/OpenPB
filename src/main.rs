@@ -4,8 +4,12 @@ mod nn;
 mod parse_json;
 
 use nn::network::Network;
+
 use serde_json::Value;
+
 use clap::{Arg, App};
+
+use std::time::{SystemTime, Duration};
 use std::fs;
 
 #[doc(hidden)]
@@ -114,11 +118,17 @@ fn main() -> Result<(), String> {
         Err(msg) => return Err(msg)
     };
 
+    let now = SystemTime::now();
+    println!("Network created\nStarting training cycle...\n");
+
     network.fit(&input.data, &output.data, optimizer, metric, epochs_json);
 
     for (input, output) in input.data.iter().zip(output.data) {
         println!("{}: {} {}", input, network.predict(input), output);
     }
+
+    let elapsed: Duration = now.elapsed().unwrap();
+    println!("\nFinished after {} seconds", elapsed.as_secs_f32());
 
     Ok(())
 }
