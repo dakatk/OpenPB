@@ -1,210 +1,227 @@
-use crate::nn::activations::*;
-use crate::nn::costs::*;
-use crate::nn::metrics::*;
-use crate::nn::optimizers::*;
+use crate::nn::network::Network;
+use crate::nn::costs::{Cost, MSE};
+use crate::nn::activations::{ActivationFn, Sigmoid, ReLU, LeakyReLU};
+use crate::nn::metrics::{Metric, Accuracy};
+use crate::nn::optimizers::{Optimizer, SGD, Adam};
 
 use ndarray::Array1;
 
+use serde::Deserialize;
 use serde_json::{Map, Value};
 
-/// 
-pub struct LayerValues {
+/// Deserialized values representing the input data in JSON
+#[derive(Deserialize)]
+struct InputDe {
 
-    /// 
-    pub neurons: u64,
+    /// Number of neurons
+    neurons: usize,
 
-    /// 
-    pub activation_fn: Box<dyn ActivationFn>
+    /// Name of activation function
+    activation: String,
+
+    /// Size of each input vector
+    size: usize,
+
+    /// All input vectors
+    data: Vec<Array1<f64>>
 }
 
-/// 
-pub struct InputValues {
+/// Deserialized values representing the output data in JSON
+#[derive(Deserialize)]
+struct OutputDe {
 
-    /// 
-    pub neurons: u64,
+    /// Name of activation function
+    activation: String,
 
-    /// 
-    pub activation_fn: Box<dyn ActivationFn>,
+    /// Size of each output vector
+    size: usize,
 
-    /// 
-    pub size: u64,
-
-    /// 
-    pub data: Vec<Array1<f64>>
+    /// All output vectors
+    data: Vec<Array1<f64>>
 }
 
-/// 
-pub struct OutputValues {
+/// Deserialized values representing both input and output data in JSON
+#[derive(Deserialize)]
+struct DataDe {
 
-    /// 
-    pub activation_fn: Box<dyn ActivationFn>,
+    /// Input data
+    inputs: InputDe,
 
-    /// 
-    pub size: u64,
-
-    /// 
-    pub data: Vec<Array1<f64>>
+    /// Output data
+    outputs: OutputDe
 }
 
-/// 
-pub fn has_keys(json: &Value, keys: Vec<&str>) -> bool {
-    for key in keys {
-        match json.get(key) {
-            Some(_) => continue,
-            None => return false
+/// Deserialized values representing a single Layer in JSON
+#[derive(Deserialize)]
+struct LayerDe {
+
+    /// Number of neurons
+    neurons: usize,
+
+    /// Name of activation function
+    activation: String
+}
+
+/// Deserialized values representing the Optimizer in JSON
+#[derive(Deserialize)]
+struct OptimizerDe {
+
+    /// Name of the optimization method
+    name: String,
+
+    /// Learning rate constant
+    learning_rate: f64,
+}
+
+/// Deserialized values representing the evaluation Metric in JSON
+#[derive(Deserialize)]
+struct MetricDe {
+
+    /// Name of the Metric
+    name: String,
+
+    /// Any arguments, if needed
+    args: Map<String, Value>
+}
+
+/// Deserialized values representing the Network setup in JSON
+#[derive(Deserialize)]
+struct NetworkDe {
+
+    /// Cost function name
+    cost: String,
+
+    /// Hidden layer values
+    hidden_layers: Vec<LayerDe>,
+
+    /// Optimizer values
+    optimizer: OptimizerDe,
+
+    /// Metric values
+    metric: MetricDe,
+
+    /// Number of trianing epochs
+    epochs: u64
+}
+
+pub struct NetworkDataDe {
+
+    pub network: Network,
+    pub inputs: Vec<Array1<f64>>,
+    pub outputs: Vec<Array1<f64>>,
+    pub metric: Box<dyn Metric>,
+    pub optimizer: Box<dyn Optimizer>,
+    pub epochs: u64
+}
+
+impl NetworkDataDe {
+
+    pub fn from_json<'a>(data_json: &'a str, network_json: &'a str) -> Result<NetworkDataDe, &'static str> {
+
+        let data_values: DataDe = serde_json::from_str(data_json).unwrap();
+        let network_values: NetworkDe = serde_json::from_str(network_json).unwrap();
+
+        let input_values: InputDe = data_values.inputs;
+        let output_values: OutputDe = data_values.outputs;
+
+        let cost: Box<dyn Cost> = match cost_from_str(network_values.cost.to_lowercase()) {
+            Some(value) => value,
+            None => {
+                return Err("Invalid cost function name")
+            }
+        };
+
+        let mut network = Network::new(cost);
+
+        let input_activation = match activation_from_str(input_values.activation.to_lowercase()) {
+            Some(value) => value,
+            None => {
+                return Err("Invalid activation function name")
+            }
+        };
+
+        network.add_layer(
+            input_values.neurons, 
+            Some(input_values.size),
+            input_activation);
+
+        for layer in network_values.hidden_layers.iter() {
+
+            let layer_activation = match activation_from_str(layer.activation.to_lowercase()) {
+                Some(value) => value,
+                None => {
+                    return Err("Invalid activation function name")
+                }
+            };
+
+            network.add_layer(layer.neurons, None, layer_activation);
         }
-    }
 
-    true
-}
+        let output_activation = match activation_from_str(output_values.activation.to_lowercase()) {
+            Some(value) => value,
+            None => {
+                return Err("Invalid activation function name")
+            }
+        };
 
-/// 
-pub fn get_input_data(args: &Map<String, Value>) -> Result<InputValues, String> {
-    let neurons = match args["neurons"].as_u64() {
-        Some(neurons) => neurons,
-        None => return Err("Missing field 'neurons' from input".to_string())
-    };
+        network.add_layer(output_values.size, None, output_activation);
 
-    let activation = match args["activation"].as_str() {
-        Some(activation) => activation,
-        None => return Err("Missing field 'activation' from layer".to_string())
-    };
+        let metric = match metric_from_str(network_values.metric) {
+            Some(value) => value,
+            None => {
+                return Err("Invalid metric name")
+            }
+        };
 
-    let activation_fn: Box<dyn ActivationFn> = match activation.to_lowercase().as_str() {
-        "sigmoid" => Box::new(Sigmoid),
-        "relu" => Box::new(ReLU),
-        _ => return Err("Invalid activation function name".to_string())
-    };
+        let optimizer = match optimizer_from_str(network_values.optimizer) {
+            Some(value) => value,
+            None => {
+                return Err("Invalid activation function name")
+            }
+        };
 
-    let size = match args["size"].as_u64() {
-        Some(size) => size,
-        None => return Err("Missing field 'size' from input".to_string())
-    };
-
-    let data = match args["data"].as_array() {
-        Some(data) => data,
-        None => return Err("Missing field 'data' from input".to_string())
-    };
-
-    Ok(InputValues {
-        neurons,
-        activation_fn,
-        size,
-        data: values_to_f64_array(data)
-    })
-}
-
-/// 
-pub fn get_output_data(args: &Map<String, Value>) -> Result<OutputValues, String> {
-    let activation = match args["activation"].as_str() {
-        Some(activation) => activation,
-        None => return Err("Missing field 'activation' from layer".to_string())
-    };
-
-    let activation_fn: Box<dyn ActivationFn> = match activation.to_lowercase().as_str() {
-        "sigmoid" => Box::new(Sigmoid),
-        "relu" => Box::new(ReLU),
-        _ => return Err("Invalid activation function name".to_string())
-    };
-
-    let size = match args["size"].as_u64() {
-        Some(size) => size,
-        None => return Err("Missing field 'size' from input".to_string())
-    };
-
-    let data = match args["data"].as_array() {
-        Some(data) => data,
-        None => return Err("Missing field 'data' from input".to_string())
-    };
-
-    Ok(OutputValues {
-        activation_fn,
-        size: size,
-        data: values_to_f64_array(data)
-    })
-}
-
-#[doc(hidden)]
-fn values_to_f64_array(values: &Vec<Value>) -> Vec<Array1<f64>> {
-    fn value_vec_to_f64_vec(value: &Vec<Value>) -> Vec<f64> {
-        value.iter().map(|el| el.as_f64().unwrap()).collect()
-    }
-
-    values
-        .iter()
-        .map(|el| {
-            let as_vec = value_vec_to_f64_vec(el.as_array().unwrap());
-
-            Array1::from(as_vec)
+        Ok(NetworkDataDe {
+            network,
+            inputs: input_values.data,
+            outputs: output_values.data,
+            metric,
+            optimizer,
+            epochs: network_values.epochs
         })
-        .collect()
-}
+    }
+} 
 
-/// 
-pub fn get_layer(args: &Value) -> Result<LayerValues, String> {
-    let neurons = match args["neurons"].as_u64() {
-        Some(neurons) => neurons,
-        None => return Err("Missing field 'neurons' from layer".to_string())
-    };
+fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
 
-    let activation = match args["activation"].as_str() {
-        Some(activation) => activation,
-        None => return Err("Missing field 'activation' from layer".to_string())
-    };
-
-    let activation_fn: Box<dyn ActivationFn> = match activation.to_lowercase().as_str() {
-        "sigmoid" => Box::new(Sigmoid),
-        "relu" => Box::new(ReLU),
-        _ => return Err("Invalid activation function name".to_string())
-    };
-
-    Ok(LayerValues {
-        neurons,
-        activation_fn
-    })
-}
-
-/// 
-pub fn get_cost_fn(arg: String) -> Result<Box<dyn Cost>, String> {
-    match arg.to_lowercase().as_str() {
-        "mse" => Ok(Box::new(MSE)),
-        _ => Err("Invalid cost function name".to_string())
+    match name.as_str() {
+        "mse" => Some(Box::new(MSE)),
+        _ => None
     }
 }
 
-/// 
-pub fn get_optimizer(args: &Map<String, Value>) -> Result<Box<dyn Optimizer>, String> {
-    let name = match args["name"].as_str() {
-        Some(name) => name,
-        None => return Err("Missing field 'name' from optimizer".to_string())
-    };
+fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
 
-    let learning_rate = match args["learning_rate"].as_f64() {
-        Some(learning_rate) => learning_rate,
-        None => return Err("Missing field 'learning_rate' from optimizer".to_string())
-    };
-
-    match name.to_lowercase().as_str() {
-        "sgd" => Ok(Box::new(SGD::new(learning_rate))),
-        "adam" => Ok(Box::new(Adam::new(learning_rate))),
-        _ => Err("Invalid optimizer name".to_string())
+    match name.as_str() {
+        "sigmoid" => Some(Box::new(Sigmoid)),
+        "relu" => Some(Box::new(ReLU)),
+        "leakyrelu" => Some(Box::new(LeakyReLU)),
+        _ => None
     }
 }
 
-/// 
-pub fn get_metric(args: &Map<String, Value>) -> Result<Box<dyn Metric>, String> {
-    let name = match args["name"].as_str() {
-        Some(name) => name,
-        None => return Err("Missing field 'name' from metric".to_string())
-    };
+fn metric_from_str(metric_data: MetricDe) -> Option<Box<dyn Metric>> {
 
-    let params = match args["args"].as_object() {
-        Some(params) => params,
-        None => return Err("Missing field 'args' from metric".to_string())
-    };
+    match metric_data.name.to_lowercase().as_str() {
+        "accuracy" => Some(Box::new(Accuracy::new(&metric_data.args))),
+        _ => None
+    }
+}
 
-    match name.to_lowercase().as_str() {
-        "accuracy" => Ok(Box::new(Accuracy::new(params))),
-        _ => Err("Invalid metric name".to_string())
+fn optimizer_from_str<'a>(optimizer_data: OptimizerDe) -> Option<Box<dyn Optimizer>> {
+
+    match optimizer_data.name.to_lowercase().as_str() {
+        "sgd" => Some(Box::new(SGD::new(optimizer_data.learning_rate))),
+        "adam" => Some(Box::new(Adam::new(optimizer_data.learning_rate))),
+        _ => None
     }
 }
