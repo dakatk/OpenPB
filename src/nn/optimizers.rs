@@ -4,8 +4,6 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use rand::rngs::ThreadRng;
 
-// TODO 'next' function should produce an index based on size of inputs/ouputs
-
 /// Momentum constant
 const BETA_1: f64 = 0.9;
 

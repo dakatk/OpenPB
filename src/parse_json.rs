@@ -217,7 +217,7 @@ fn metric_from_str(metric_data: MetricDe) -> Option<Box<dyn Metric>> {
     }
 }
 
-fn optimizer_from_str<'a>(optimizer_data: OptimizerDe) -> Option<Box<dyn Optimizer>> {
+fn optimizer_from_str(optimizer_data: OptimizerDe) -> Option<Box<dyn Optimizer>> {
 
     match optimizer_data.name.to_lowercase().as_str() {
         "sgd" => Some(Box::new(SGD::new(optimizer_data.learning_rate))),

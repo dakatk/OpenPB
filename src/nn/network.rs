@@ -223,8 +223,8 @@ impl Network {
     /// * `epochs` - Maximum number of training cycles
     pub fn fit(
         &mut self,
-        inputs: &Vec<Array1<f64>>,
-        outputs: &Vec<Array1<f64>>,
+        inputs: &[Array1<f64>],
+        outputs: &[Array1<f64>],
         mut optimizer: Box<dyn Optimizer>,
         metric: Box<dyn Metric>,
         epochs: u64
