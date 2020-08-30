@@ -1,8 +1,8 @@
-use crate::nn::network::Network;
+use crate::nn::activations::{ActivationFn, LeakyReLU, ReLU, Sigmoid};
 use crate::nn::costs::{Cost, MSE};
-use crate::nn::activations::{ActivationFn, Sigmoid, ReLU, LeakyReLU};
-use crate::nn::metrics::{Metric, Accuracy};
-use crate::nn::optimizers::{Optimizer, SGD, Adam};
+use crate::nn::metrics::{Accuracy, Metric};
+use crate::nn::network::Network;
+use crate::nn::optimizers::{Adam, Optimizer, SGD};
 
 use ndarray::Array1;
 
@@ -12,7 +12,6 @@ use serde_json::{Map, Value};
 /// Deserialized values representing the input data in JSON
 #[derive(Deserialize)]
 struct InputDe {
-
     /// Number of neurons
     neurons: usize,
 
@@ -29,7 +28,6 @@ struct InputDe {
 /// Deserialized values representing the output data in JSON
 #[derive(Deserialize)]
 struct OutputDe {
-
     /// Name of activation function
     activation: String,
 
@@ -43,7 +41,6 @@ struct OutputDe {
 /// Deserialized values representing both input and output data in JSON
 #[derive(Deserialize)]
 struct DataDe {
-
     /// Input data
     inputs: InputDe,
 
@@ -54,7 +51,6 @@ struct DataDe {
 /// Deserialized values representing a single Layer in JSON
 #[derive(Deserialize)]
 struct LayerDe {
-
     /// Number of neurons
     neurons: usize,
 
@@ -65,18 +61,16 @@ struct LayerDe {
 /// Deserialized values representing the Optimizer in JSON
 #[derive(Deserialize)]
 struct OptimizerDe {
-
     /// Name of the optimization method
     name: String,
 
     /// Learning rate constant
-    learning_rate: f64,
+    learning_rate: f64
 }
 
 /// Deserialized values representing the evaluation Metric in JSON
 #[derive(Deserialize)]
 struct MetricDe {
-
     /// Name of the Metric
     name: String,
 
@@ -87,7 +81,6 @@ struct MetricDe {
 /// Deserialized values representing the Network setup in JSON
 #[derive(Deserialize)]
 struct NetworkDe {
-
     /// Cost function name
     cost: String,
 
@@ -105,7 +98,6 @@ struct NetworkDe {
 }
 
 pub struct NetworkDataDe {
-
     pub network: Network,
     pub inputs: Vec<Array1<f64>>,
     pub outputs: Vec<Array1<f64>>,
@@ -115,9 +107,10 @@ pub struct NetworkDataDe {
 }
 
 impl NetworkDataDe {
-
-    pub fn from_json<'a>(data_json: &'a str, network_json: &'a str) -> Result<NetworkDataDe, &'static str> {
-
+    pub fn from_json<'a>(
+        data_json: &'a str,
+        network_json: &'a str
+    ) -> Result<NetworkDataDe, &'static str> {
         let data_values: DataDe = serde_json::from_str(data_json).unwrap();
         let network_values: NetworkDe = serde_json::from_str(network_json).unwrap();
 
@@ -126,32 +119,26 @@ impl NetworkDataDe {
 
         let cost: Box<dyn Cost> = match cost_from_str(network_values.cost.to_lowercase()) {
             Some(value) => value,
-            None => {
-                return Err("Invalid cost function name")
-            }
+            None => return Err("Invalid cost function name")
         };
 
         let mut network = Network::new(cost);
 
         let input_activation = match activation_from_str(input_values.activation.to_lowercase()) {
             Some(value) => value,
-            None => {
-                return Err("Invalid activation function name")
-            }
+            None => return Err("Invalid activation function name")
         };
 
         network.add_layer(
-            input_values.neurons, 
+            input_values.neurons,
             Some(input_values.size),
-            input_activation);
+            input_activation
+        );
 
         for layer in network_values.hidden_layers.iter() {
-
             let layer_activation = match activation_from_str(layer.activation.to_lowercase()) {
                 Some(value) => value,
-                None => {
-                    return Err("Invalid activation function name")
-                }
+                None => return Err("Invalid activation function name")
             };
 
             network.add_layer(layer.neurons, None, layer_activation);
@@ -159,25 +146,19 @@ impl NetworkDataDe {
 
         let output_activation = match activation_from_str(output_values.activation.to_lowercase()) {
             Some(value) => value,
-            None => {
-                return Err("Invalid activation function name")
-            }
+            None => return Err("Invalid activation function name")
         };
 
         network.add_layer(output_values.size, None, output_activation);
 
         let metric = match metric_from_str(network_values.metric) {
             Some(value) => value,
-            None => {
-                return Err("Invalid metric name")
-            }
+            None => return Err("Invalid metric name")
         };
 
         let optimizer = match optimizer_from_str(network_values.optimizer) {
             Some(value) => value,
-            None => {
-                return Err("Invalid activation function name")
-            }
+            None => return Err("Invalid activation function name")
         };
 
         Ok(NetworkDataDe {
@@ -189,10 +170,9 @@ impl NetworkDataDe {
             epochs: network_values.epochs
         })
     }
-} 
+}
 
 fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
-
     match name.as_str() {
         "mse" => Some(Box::new(MSE)),
         _ => None
@@ -200,7 +180,6 @@ fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
 }
 
 fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
-
     match name.as_str() {
         "sigmoid" => Some(Box::new(Sigmoid)),
         "relu" => Some(Box::new(ReLU)),
@@ -210,7 +189,6 @@ fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
 }
 
 fn metric_from_str(metric_data: MetricDe) -> Option<Box<dyn Metric>> {
-
     match metric_data.name.to_lowercase().as_str() {
         "accuracy" => Some(Box::new(Accuracy::new(&metric_data.args))),
         _ => None
@@ -218,7 +196,6 @@ fn metric_from_str(metric_data: MetricDe) -> Option<Box<dyn Metric>> {
 }
 
 fn optimizer_from_str(optimizer_data: OptimizerDe) -> Option<Box<dyn Optimizer>> {
-
     match optimizer_data.name.to_lowercase().as_str() {
         "sgd" => Some(Box::new(SGD::new(optimizer_data.learning_rate))),
         "adam" => Some(Box::new(Adam::new(optimizer_data.learning_rate))),

@@ -5,28 +5,31 @@ mod parse_json;
 
 use parse_json::NetworkDataDe;
 
-use clap::{Arg, App};
+use clap::{App, Arg};
 
-use std::time::{SystemTime, Duration};
 use std::fs;
+use std::time::{Duration, SystemTime};
 
 #[doc(hidden)]
 fn main() -> Result<(), String> {
     let args = App::new("Open Neural Network Benchmarker (ONNB)")
-                        .version("0.1")
-                        .author("Dusten Knull <dakatk97@gmail.com>")
-                        .arg(Arg::with_name("data")
-                            .short("d")
-                            .long("data")
-                            .value_name("JSON_FILE")
-                            .required(true)
-                        )
-                        .arg(Arg::with_name("network")
-                            .short("n")
-                            .long("network")
-                            .value_name("JSON_FILE")
-                            .required(true)
-                        ).get_matches();
+        .version("0.1")
+        .author("Dusten Knull <dakatk97@gmail.com>")
+        .arg(
+            Arg::with_name("data")
+                .short("d")
+                .long("data")
+                .value_name("JSON_FILE")
+                .required(true)
+        )
+        .arg(
+            Arg::with_name("network")
+                .short("n")
+                .long("network")
+                .value_name("JSON_FILE")
+                .required(true)
+        )
+        .get_matches();
 
     let network_filename: &str = args.value_of("network").unwrap();
     let data_filename: &str = args.value_of("data").unwrap();
@@ -46,17 +49,16 @@ fn main() -> Result<(), String> {
 
     match NetworkDataDe::from_json(&data_contents, &network_contents) {
         Ok(result) => {
-
             let now = SystemTime::now();
             let mut network = result.network;
 
             println!("Network successfully created\nStarting training cycle...\n");
 
             network.fit(
-                &result.inputs, 
-                &result.outputs, 
-                result.optimizer, 
-                result.metric, 
+                &result.inputs,
+                &result.outputs,
+                result.optimizer,
+                result.metric,
                 result.epochs
             );
 
@@ -68,7 +70,7 @@ fn main() -> Result<(), String> {
             }
 
             Ok(())
-        },
+        }
         Err(msg) => Err(msg.to_string())
     }
 }

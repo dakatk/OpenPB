@@ -1,4 +1,4 @@
-use crate::nn::activations::{ActivationFn};
+use crate::nn::activations::ActivationFn;
 use crate::nn::costs::Cost;
 use crate::nn::metrics::Metric;
 use crate::nn::optimizers::Optimizer;
@@ -7,11 +7,10 @@ use ndarray::{Array, Array1, Array2, Axis};
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 
-use serde::ser::{Serialize, Serializer, SerializeStruct};
+use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 /// A single Layer in the Network
 struct Layer {
-
     /// Matrix of weights (shape: neurons x inputs)
     weights: Array2<f64>,
 
@@ -38,7 +37,6 @@ struct Layer {
 }
 
 impl Layer {
-
     /// # Arguments
     ///
     /// * `neurons` - Number of neurons, determines how many weights/biases are present
@@ -51,7 +49,8 @@ impl Layer {
             inputs: Array::zeros(inputs),
             activations: Array::zeros(neurons),
             delta: Array::zeros(neurons),
-            neurons, activation_fn
+            neurons,
+            activation_fn
         }
     }
 
@@ -125,7 +124,9 @@ impl Clone for Layer {
 
 impl Serialize for Layer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where S: Serializer {
+    where
+        S: Serializer
+    {
         let mut s = serializer.serialize_struct("Layer", 2)?;
         s.serialize_field("weights", &self.weights)?;
         s.serialize_field("biases", &self.biases)?;
@@ -135,7 +136,6 @@ impl Serialize for Layer {
 }
 
 pub struct Network {
-
     /// Input, hidden, and output layers. Each layer is considered
     /// to be 'connected' to the next one in the list
     layers: Vec<Layer>,
@@ -145,13 +145,13 @@ pub struct Network {
 }
 
 impl Network {
-
     /// # Arguments:
     ///
     /// * `cost` - Loss function for error reporting/backprop
     pub fn new(cost: Box<dyn Cost>) -> Network {
         Network {
-            layers: vec![], cost
+            layers: vec![],
+            cost
         }
     }
 

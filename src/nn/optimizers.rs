@@ -1,8 +1,8 @@
 use ndarray::{Array, Array2};
 
+use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use rand::rngs::ThreadRng;
 
 /// Momentum constant
 const BETA_1: f64 = 0.9;
@@ -13,7 +13,6 @@ const BETA_2: f64 = 0.999;
 /// Optimizer functions that's used to determine how a Network's weights should be
 /// Adjusted after each training step
 pub trait Optimizer {
-
     /// Exposes the `learning_rate` property for all Optimizers
     fn learning_rate(&self) -> f64;
 
@@ -34,7 +33,6 @@ pub trait Optimizer {
 
 /// Stochastic Gradient Descent optimizer
 pub struct SGD {
-
     /// Random number generator for getting next sample
     rng: ThreadRng,
 
@@ -47,9 +45,8 @@ pub struct SGD {
 }
 
 impl SGD {
-
     /// # Arguments
-    /// 
+    ///
     /// * `learning_rate` - The step size when adjusting weights for each call of gradient descent
     #[allow(dead_code)]
     pub fn new(learning_rate: f64) -> SGD {
@@ -88,23 +85,21 @@ impl Optimizer for SGD {
 }
 
 pub struct Adam {
-
     /// Current step in the training process
     time_step: u16,
 
     /// The step size when adjusting weights for each call of gradient descent
     learning_rate: f64,
 
-    /// 
+    ///
     velocities: Vec<Array2<f64>>,
 
-    /// 
+    ///
     moments: Vec<Array2<f64>>
 }
 
 impl Adam {
-
-    /// 
+    ///
     #[allow(dead_code)]
     pub fn new(learning_rate: f64) -> Adam {
         Adam {

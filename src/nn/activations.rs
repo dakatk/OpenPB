@@ -3,7 +3,6 @@ use ndarray::Array1;
 /// Neuron activation function used for feed forward
 /// and backprop methods in Network training
 pub trait ActivationFn {
-
     /// Call the activation function with a set of inputs
     ///
     /// # Arguments
@@ -62,14 +61,18 @@ impl ActivationFn for Sigmoid {
 #[derive(Clone)]
 pub struct ReLU;
 
-/// Mathematical definition of the Rectified Linear Unit 
+/// Mathematical definition of the Rectified Linear Unit
 /// function for scalar values
 ///
 /// # Arguments
 ///
 /// * `x` - Function input value
 fn relu(x: f64) -> f64 {
-    if x > 0. { x } else { 0. }
+    if x > 0. {
+        x
+    } else {
+        0.
+    }
 }
 
 /// Derivative of the Rectified Linear Unit function
@@ -78,7 +81,11 @@ fn relu(x: f64) -> f64 {
 ///
 /// * `x` - Function input value
 fn relu_prime(x: f64) -> f64 {
-    if x > 0. { 1. } else { 0. }
+    if x > 0. {
+        1.
+    } else {
+        0.
+    }
 }
 
 impl ActivationFn for ReLU {
@@ -106,7 +113,11 @@ pub struct LeakyReLU;
 ///
 /// * `x` - Function input value
 fn leaky_relu(x: f64) -> f64 {
-    if x > 0. { x } else { 0.01 * x }
+    if x > 0. {
+        x
+    } else {
+        0.01 * x
+    }
 }
 
 /// Derivative of the Leaky ReLU function
@@ -115,7 +126,11 @@ fn leaky_relu(x: f64) -> f64 {
 ///
 /// * `x` - Function input value
 fn leaky_relu_prime(x: f64) -> f64 {
-    if x > 0. { 1. } else { 0.01 }
+    if x > 0. {
+        1.
+    } else {
+        0.01
+    }
 }
 
 impl ActivationFn for LeakyReLU {

@@ -2,7 +2,6 @@ use ndarray::Array1;
 
 /// Cost or loss function to determine the Network's error
 pub trait Cost {
-
     /// First derivative of the cost function. Used in Network backprop
     ///
     /// # Arguments

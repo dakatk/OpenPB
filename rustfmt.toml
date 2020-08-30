@@ -1,5 +1,4 @@
 binop_separator = "Back"
 edition = "2018"
-single_line_if_else_max_width = 100
-space_before_fn_sig_paren = true
+# space_before_fn_sig_paren = true
 trailing_comma = "Never"
