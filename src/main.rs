@@ -39,12 +39,12 @@ fn main() -> Result<(), String> {
         )
         .arg(
             Arg::with_name("output")
-            .short("o")
-            .long("output")
-            .takes_value(true)
-            .value_name("JSON_FILE")
-            .required(false)
-            .help("JSON file where weights and biases are stored (optional)")
+                .short("o")
+                .long("output")
+                .takes_value(true)
+                .value_name("JSON_FILE")
+                .required(false)
+                .help("JSON file where weights and biases are stored (optional)")
         )
         .get_matches();
 
@@ -93,17 +93,18 @@ fn main() -> Result<(), String> {
 }
 
 fn choose_to_save(args: &ArgMatches, network: &Network) -> Result<(), String> {
-
     if args.is_present("output") {
         let out_file = args.value_of("output").unwrap();
         parse_json::save_layer_values(network, out_file)
-
     } else {
-        match user_input("\nSave internal values? (Y/N): ").to_lowercase().as_str() {
+        match user_input("\nSave internal values? (Y/N): ")
+            .to_lowercase()
+            .as_str()
+        {
             "y" | "yes" => {
                 let out_file = user_input("Filename: ");
                 parse_json::save_layer_values(network, &out_file.as_str())
-            },
+            }
             _ => Ok(())
         }
     }
@@ -114,7 +115,9 @@ fn user_input(prompt: &'static str) -> String {
     print!("{}", prompt);
 
     io::stdout().flush().expect("Error: failed to flush stdout");
-    io::stdin().read_line(&mut input).expect("Error: unable to read user input");
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Error: unable to read user input");
 
     input.trim().to_string()
 }

@@ -300,3 +300,15 @@ impl Network {
         output
     }
 }
+
+impl Serialize for Network {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer
+    {
+        let mut s = serializer.serialize_struct("Network", 1)?;
+        s.serialize_field("layers", &self.layers)?;
+
+        s.end()
+    }
+}

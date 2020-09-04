@@ -26,11 +26,14 @@ pub trait DynClone {
     fn clone_box(&self) -> Box<dyn ActivationFn>;
 }
 
-impl<T> DynClone for T where T : 'static + ActivationFn + Clone {
+impl<T> DynClone for T
+where
+    T: 'static + ActivationFn + Clone
+{
     fn clone_box(&self) -> Box<dyn ActivationFn> {
         Box::new(self.clone())
     }
-} 
+}
 
 impl Clone for Box<dyn ActivationFn> {
     fn clone(&self) -> Box<dyn ActivationFn> {
