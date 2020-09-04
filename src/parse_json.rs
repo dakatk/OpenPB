@@ -214,6 +214,8 @@ fn optimizer_from_str(optimizer_data: OptimizerDe) -> Option<Box<dyn Optimizer>>
 /// * `network` - Network object to be serialized
 /// * `filename` - JSON file to write serialized values to
 pub fn save_layer_values(network: &Network, filename: &str) -> Result<(), String> {
+    println!("\nAttempting to write to {}...", filename);
+
     let mut file = match File::create(&Path::new(filename)) {
         Ok(file) => file,
         Err(msg) => return Err(format!("Failed to create file {}: {}", filename, msg))
@@ -222,7 +224,10 @@ pub fn save_layer_values(network: &Network, filename: &str) -> Result<(), String
     let network_ser = serde_json::to_string_pretty(&network).unwrap();
 
     match file.write_all(network_ser.as_bytes()) {
-        Ok(_) => Ok(()),
+        Ok(_) => {
+            println!("Success!");
+            Ok(())
+        },
         Err(msg) => Err(msg.to_string())
     }
 }
