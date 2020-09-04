@@ -63,7 +63,7 @@ fn main() -> Result<(), String> {
             );
 
             let elapsed: Duration = now.elapsed().unwrap();
-            println!("\nFinished after {} seconds", elapsed.as_secs_f32());
+            println!("Finished after {} seconds\n", elapsed.as_secs_f32());
 
             for (input, output) in result.inputs.iter().zip(result.outputs) {
                 println!("{}: {} {}", input, network.predict(input), output);

@@ -117,7 +117,7 @@ impl Clone for Layer {
             activations: self.activations.to_owned(),
             delta: self.delta.to_owned(),
             neurons: self.neurons,
-            activation_fn: self.activation_fn.box_clone()
+            activation_fn: self.activation_fn.clone()
         }
     }
 }
@@ -253,7 +253,7 @@ impl Network {
                         &network_output,
                         &outputs[sample],
                         attached_layer,
-                        self.cost.box_clone()
+                        self.cost.clone()
                     );
                 }
 
@@ -267,7 +267,7 @@ impl Network {
             }
 
             if early_stop {
-                println!("ended on epoch {}", epoch);
+                println!("Training ended on epoch {}", epoch);
                 break;
             }
         }

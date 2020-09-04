@@ -2,7 +2,7 @@ use ndarray::Array1;
 
 /// Neuron activation function used for feed forward
 /// and backprop methods in Network training
-pub trait ActivationFn {
+pub trait ActivationFn: DynClone {
     /// Call the activation function with a set of inputs
     ///
     /// # Arguments
@@ -17,8 +17,25 @@ pub trait ActivationFn {
     /// * `x` - Row vector of input values
     fn prime(&self, x: &Array1<f64>) -> Array1<f64>;
 
-    /// Create a clone of a boxed instance of this trait
-    fn box_clone(&self) -> Box<dyn ActivationFn>;
+    // Create a clone of a boxed instance of this trait
+    //fn box_clone(&self) -> Box<dyn ActivationFn> where Self : Sized;
+}
+
+pub trait DynClone {
+    /// Create a clone of a boxed instance of a trait
+    fn clone_box(&self) -> Box<dyn ActivationFn>;
+}
+
+impl<T> DynClone for T where T : 'static + ActivationFn + Clone {
+    fn clone_box(&self) -> Box<dyn ActivationFn> {
+        Box::new(self.clone())
+    }
+} 
+
+impl Clone for Box<dyn ActivationFn> {
+    fn clone(&self) -> Box<dyn ActivationFn> {
+        self.clone_box()
+    }
 }
 
 /// Logistic Sigmoid activation function
@@ -50,10 +67,6 @@ impl ActivationFn for Sigmoid {
 
     fn prime(&self, x: &Array1<f64>) -> Array1<f64> {
         x.mapv(sigmoid_prime)
-    }
-
-    fn box_clone(&self) -> Box<dyn ActivationFn> {
-        Box::new((*self).clone())
     }
 }
 
@@ -96,10 +109,6 @@ impl ActivationFn for ReLU {
     fn prime(&self, x: &Array1<f64>) -> Array1<f64> {
         x.mapv(relu_prime)
     }
-
-    fn box_clone(&self) -> Box<dyn ActivationFn> {
-        Box::new((*self).clone())
-    }
 }
 
 /// Leaky Rectified Linear Unit activation function
@@ -140,9 +149,5 @@ impl ActivationFn for LeakyReLU {
 
     fn prime(&self, x: &Array1<f64>) -> Array1<f64> {
         x.mapv(leaky_relu_prime)
-    }
-
-    fn box_clone(&self) -> Box<dyn ActivationFn> {
-        Box::new((*self).clone())
     }
 }

@@ -10,7 +10,7 @@ use serde::Deserialize;
 use serde_json::{Map, Value};
 
 /// Deserialized values representing the input data in JSON
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct InputDe {
     /// Number of neurons
     neurons: usize,
@@ -26,7 +26,7 @@ struct InputDe {
 }
 
 /// Deserialized values representing the output data in JSON
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct OutputDe {
     /// Name of activation function
     activation: String,
@@ -39,7 +39,7 @@ struct OutputDe {
 }
 
 /// Deserialized values representing both input and output data in JSON
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct DataDe {
     /// Input data
     inputs: InputDe,
@@ -49,7 +49,7 @@ struct DataDe {
 }
 
 /// Deserialized values representing a single Layer in JSON
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct LayerDe {
     /// Number of neurons
     neurons: usize,
@@ -59,7 +59,7 @@ struct LayerDe {
 }
 
 /// Deserialized values representing the Optimizer in JSON
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct OptimizerDe {
     /// Name of the optimization method
     name: String,
@@ -69,7 +69,7 @@ struct OptimizerDe {
 }
 
 /// Deserialized values representing the evaluation Metric in JSON
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct MetricDe {
     /// Name of the Metric
     name: String,
@@ -79,7 +79,7 @@ struct MetricDe {
 }
 
 /// Deserialized values representing the Network setup in JSON
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct NetworkDe {
     /// Cost function name
     cost: String,
