@@ -16,9 +16,6 @@ pub trait ActivationFn: DynClone {
     ///
     /// * `x` - Row vector of input values
     fn prime(&self, x: &Array1<f64>) -> Array1<f64>;
-
-    // Create a clone of a boxed instance of this trait
-    //fn box_clone(&self) -> Box<dyn ActivationFn> where Self : Sized;
 }
 
 pub trait DynClone {
