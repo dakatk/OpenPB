@@ -3,31 +3,48 @@
 mod nn;
 mod parse_json;
 
+use nn::network::Network;
+
 use parse_json::NetworkDataDe;
 
-use clap::{App, Arg};
+use clap::{App, Arg, ArgMatches};
 
 use std::fs;
+use std::io;
+use std::io::Write;
 use std::time::{Duration, SystemTime};
 
 #[doc(hidden)]
 fn main() -> Result<(), String> {
-    let args = App::new("Open Neural Network Benchmarker (ONNB)")
+    let args: ArgMatches = App::new("Open Neural Network Benchmarker (ONNB)")
         .version("0.1")
         .author("Dusten Knull <dakatk97@gmail.com>")
         .arg(
             Arg::with_name("data")
                 .short("d")
                 .long("data")
+                .takes_value(true)
                 .value_name("JSON_FILE")
                 .required(true)
+                .help("JSON file with input and output vectors")
         )
         .arg(
             Arg::with_name("network")
                 .short("n")
                 .long("network")
+                .takes_value(true)
                 .value_name("JSON_FILE")
                 .required(true)
+                .help("JSON file with network structure and hyperparameters")
+        )
+        .arg(
+            Arg::with_name("output")
+            .short("o")
+            .long("output")
+            .takes_value(true)
+            .value_name("JSON_FILE")
+            .required(false)
+            .help("JSON file where weights and biases are stored (optional)")
         )
         .get_matches();
 
@@ -69,8 +86,35 @@ fn main() -> Result<(), String> {
                 println!("{}: {} {}", input, network.predict(input), output);
             }
 
-            Ok(())
+            choose_to_save(&args, &network)
         }
         Err(msg) => Err(msg.to_string())
     }
+}
+
+fn choose_to_save(args: &ArgMatches, network: &Network) -> Result<(), String> {
+
+    if args.is_present("output") {
+        let out_file = args.value_of("output").unwrap();
+        parse_json::save_layer_values(network, out_file)
+
+    } else {
+        match user_input("\nSave internal values? (Y/N): ").to_lowercase().as_str() {
+            "y" | "yes" => {
+                let out_file = user_input("Filename: ");
+                parse_json::save_layer_values(network, &out_file.as_str())
+            },
+            _ => Ok(())
+        }
+    }
+}
+
+fn user_input(prompt: &'static str) -> String {
+    let mut input = String::new();
+    print!("{}", prompt);
+
+    io::stdout().flush().expect("Error: failed to flush stdout");
+    io::stdin().read_line(&mut input).expect("Error: unable to read user input");
+
+    input.trim().to_string()
 }

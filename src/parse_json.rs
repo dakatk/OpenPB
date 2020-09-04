@@ -202,3 +202,8 @@ fn optimizer_from_str(optimizer_data: OptimizerDe) -> Option<Box<dyn Optimizer>>
         _ => None
     }
 }
+
+// TODO 
+pub fn save_layer_values(network: &Network, filename: &str) -> Result<(), String> {
+    Ok(())
+}
