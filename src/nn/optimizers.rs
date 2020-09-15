@@ -131,21 +131,26 @@ impl Optimizer for Adam {
         }
 
         let moment: Array2<f64> = (&self.moments[index] * BETA_1) + (gradient * (1. - BETA_1));
-        let grad_squard = gradient.mapv(|el| el * el);
 
-        let velocity: Array2<f64> =
-            (&self.velocities[index] * BETA_2) + (grad_squard * (1. - BETA_2));
+        let velocity: Array2<f64> = {
+            let grad_squard = gradient.mapv(|el| el * el);
+            (&self.velocities[index] * BETA_2) + (grad_squard * (1. - BETA_2))
+        };
 
         self.moments[index].assign(&moment);
         self.velocities[index].assign(&velocity);
 
-        let beta1_t = 1. - BETA_1.powi(self.time_step as i32);
-        let beta2_t = 1. - BETA_2.powi(self.time_step as i32);
+        let moment_bar: Array2<f64> = {
+            let beta1_t = 1. - BETA_1.powi(self.time_step as i32);
+            self.moments[index].mapv(|el| el / beta1_t)
+        };
 
-        let moment_bar: Array2<f64> = self.moments[index].mapv(|el| el / beta1_t);
-        let velocity_bar: Array2<f64> = self.velocities[index].mapv(|el| el / beta2_t);
+        let velocity_sqrt: Array2<f64> = {
+            let beta2_t = 1. - BETA_2.powi(self.time_step as i32);
+            let velocity_bar: Array2<f64> = self.velocities[index].mapv(|el| el / beta2_t);
 
-        let velocity_sqrt: Array2<f64> = velocity_bar.mapv(|el| f64::sqrt(el) + 1e-7);
+            velocity_bar.mapv(|el| f64::sqrt(el) + 1e-7)
+        };
 
         (moment_bar * self.learning_rate) / velocity_sqrt
     }
