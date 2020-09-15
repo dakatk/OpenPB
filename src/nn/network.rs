@@ -94,7 +94,6 @@ impl Layer {
     /// * `optimizer` - Optimization method used to perform perform gradient descent
     fn update<'a>(&mut self, index: usize, optimizer: &mut (dyn Optimizer + 'a)) {
         let gradient: Array2<f64> = {
-
             let delta: Array2<f64> = self.delta.clone().insert_axis(Axis(1));
             let inputs: Array2<f64> = self.inputs.clone().insert_axis(Axis(0));
 
@@ -283,7 +282,6 @@ impl Network {
         let mut errors: Vec<Array1<f64>> = vec![];
 
         for (input, output) in inputs.iter().zip(outputs) {
-            
             let error = {
                 let network_output = self.predict(input);
                 self.cost.prime(&network_output, output)

@@ -115,6 +115,7 @@ impl NetworkDataDe {
         data_json: &'a str,
         network_json: &'a str
     ) -> Result<NetworkDataDe, &'static str> {
+        // TODO could this be optimized more?
         let data_values: DataDe = serde_json::from_str(data_json).unwrap();
         let network_values: NetworkDe = serde_json::from_str(network_json).unwrap();
 
@@ -227,7 +228,7 @@ pub fn save_layer_values(network: &Network, filename: &str) -> Result<(), String
         Ok(_) => {
             println!("Success!");
             Ok(())
-        },
+        }
         Err(msg) => Err(msg.to_string())
     }
 }
