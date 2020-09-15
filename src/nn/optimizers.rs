@@ -91,10 +91,10 @@ pub struct Adam {
     /// The step size when adjusting weights for each call of gradient descent
     learning_rate: f64,
 
-    ///
+    /// Set of velocity values for use in RMS propogation
     velocities: Vec<Array2<f64>>,
 
-    ///
+    /// Set of moment values for use in classical momentum
     moments: Vec<Array2<f64>>
 }
 
