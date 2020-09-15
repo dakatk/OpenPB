@@ -93,15 +93,23 @@ impl Layer {
     /// * `index` - Numeric index of the current Layer's placement within the Network
     /// * `optimizer` - Optimization method used to perform perform gradient descent
     fn update<'a>(&mut self, index: usize, optimizer: &mut (dyn Optimizer + 'a)) {
-        let delta: Array2<f64> = self.delta.clone().insert_axis(Axis(1));
-        let inputs: Array2<f64> = self.inputs.clone().insert_axis(Axis(0));
-        let gradient: Array2<f64> = delta.dot(&inputs);
+        let gradient: Array2<f64> = {
 
-        let delta_weights = -optimizer.delta(index, &gradient);
-        let delta_biases = -optimizer.learning_rate() * &self.delta;
+            let delta: Array2<f64> = self.delta.clone().insert_axis(Axis(1));
+            let inputs: Array2<f64> = self.inputs.clone().insert_axis(Axis(0));
 
-        let weights: Array2<f64> = delta_weights + &self.weights;
-        let biases: Array1<f64> = delta_biases + &self.biases;
+            delta.dot(&inputs)
+        };
+
+        let weights: Array2<f64> = {
+            let delta_weights = -optimizer.delta(index, &gradient);
+            delta_weights + &self.weights
+        };
+
+        let biases: Array1<f64> = {
+            let delta_biases = -optimizer.learning_rate() * &self.delta;
+            delta_biases + &self.biases
+        };
 
         self.weights.assign(&weights);
         self.biases.assign(&biases);
@@ -275,8 +283,11 @@ impl Network {
         let mut errors: Vec<Array1<f64>> = vec![];
 
         for (input, output) in inputs.iter().zip(outputs) {
-            let network_output = self.predict(input);
-            let error = self.cost.prime(&network_output, output);
+            
+            let error = {
+                let network_output = self.predict(input);
+                self.cost.prime(&network_output, output)
+            };
 
             errors.push(error);
         }
