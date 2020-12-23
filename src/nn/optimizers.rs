@@ -1,8 +1,8 @@
-use ndarray::{Array, Array2};
+use ndarray::Array2;
 
-use rand::rngs::ThreadRng;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use network::Layer;
+
+use super::network;
 
 /// Momentum constant
 const BETA_1: f64 = 0.9;
@@ -13,29 +13,13 @@ const BETA_2: f64 = 0.999;
 /// Optimizer functions that's used to determine how a Network's weights should be
 /// Adjusted after each training step
 pub trait Optimizer {
-    /// Exposes the `learning_rate` property for all Optimizers
-    fn learning_rate(&self) -> f64;
-
-    /// Produces the next index based on the size of the inputs
-    /// and the current time step
-    fn next(&mut self, input_size: usize) -> Vec<usize>;
-
-    /// Returns the calculated adjustment factor for the Network's
-    /// weights after a single step of training
-    ///
-    /// # Arguments
-    ///
-    /// * `index` - The numeric index of the layer currently being operated on
-    /// * `gradient` - The gradient calculated between inputs
-    /// and deltas for the current layer
-    fn delta(&mut self, index: usize, gradient: &Array2<f64>) -> Array2<f64>;
+    /// Performs gradient descent, updating weights and biases for all layers.
+    /// Assumes backprop has already been done
+    fn update(&mut self, layers: &mut Vec<Layer>);
 }
 
 /// Stochastic Gradient Descent optimizer
 pub struct SGD {
-    /// Random number generator for getting next sample
-    rng: ThreadRng,
-
     /// The step size when adjusting weights for each call of gradient descent
     learning_rate: f64,
 
@@ -51,7 +35,6 @@ impl SGD {
     #[allow(dead_code)]
     pub fn new(learning_rate: f64) -> SGD {
         SGD {
-            rng: thread_rng(),
             learning_rate,
             velocities: vec![]
         }
@@ -59,10 +42,28 @@ impl SGD {
 }
 
 impl Optimizer for SGD {
-    fn learning_rate(&self) -> f64 {
-        self.learning_rate
+    fn update(&mut self, layers: &mut Vec<Layer>) {
+        if self.velocities.len() == 0 {
+            for layer in layers.iter() {
+                let inputs = layer.inputs.len();
+                let neurons = layer.neurons;
+
+                self.velocities.push(Array2::zeros((neurons, inputs)));
+            }
+        }
+
+        for i in 0..layers.len() {
+            let delta_weight: Array2<f64> = layers[i].delta.dot(&layers[i].inputs.t()) * self.learning_rate;
+            let delta_bias: Array2<f64> = &layers[i].delta * self.learning_rate;
+
+            let moment: Array2<f64> = (&self.velocities[i] * BETA_1) + (delta_weight * self.learning_rate);
+            self.velocities[i].assign(&moment);
+
+            layers[i].update(&moment, &delta_bias);
+        }
     }
 
+    /*
     fn next(&mut self, input_size: usize) -> Vec<usize> {
         let mut samples: Vec<usize> = (0..input_size).collect();
 
@@ -81,7 +82,7 @@ impl Optimizer for SGD {
         self.velocities[index].assign(&moment);
 
         moment
-    }
+    }*/
 }
 
 pub struct Adam {
@@ -112,10 +113,51 @@ impl Adam {
 }
 
 impl Optimizer for Adam {
-    fn learning_rate(&self) -> f64 {
-        self.learning_rate
+    fn update(&mut self, layers: &mut Vec<Layer>) {
+        if self.velocities.len() == 0 && self.moments.len() == 0 {
+            for layer in layers.iter() {
+                let inputs = layer.inputs.len();
+                let neurons = layer.neurons;
+
+                self.velocities.push(Array2::zeros((neurons, inputs)));
+                self.moments.push(Array2::zeros((neurons, inputs)));
+            }
+        }
+        self.time_step += 1;
+
+        for i in 0..layers.len() {
+            let delta_weight: Array2<f64> = layers[i].delta.dot(&layers[i].inputs.t());
+            let delta_bias: Array2<f64> = self.learning_rate * &layers[i].delta;
+
+            let moment: Array2<f64> = (&self.moments[i] * BETA_1) + (&delta_weight * (1. - BETA_1));
+
+            let velocity: Array2<f64> = {
+                let grad_squard = delta_weight.mapv(|el| el * el);
+                (&self.velocities[i] * BETA_2) + (grad_squard * (1. - BETA_2))
+            };
+
+            self.moments[i].assign(&moment);
+            self.velocities[i].assign(&velocity);
+
+            let moment_bar: Array2<f64> = {
+                let beta1_t = 1. - BETA_1.powi(self.time_step as i32);
+                self.moments[i].mapv(|el| el / beta1_t)
+            };
+
+            let velocity_sqrt: Array2<f64> = {
+                let beta2_t = 1. - BETA_2.powi(self.time_step as i32);
+                let velocity_bar: Array2<f64> = self.velocities[i].mapv(|el| el / beta2_t);
+
+                velocity_bar.mapv(|el| f64::sqrt(el) + 1e-7)
+            };
+
+            let moment_adj: Array2<f64> = (moment_bar * self.learning_rate) / velocity_sqrt;
+
+            layers[i].update(&moment_adj, &delta_bias);
+        }
     }
 
+    /*
     fn next(&mut self, input_size: usize) -> Vec<usize> {
         self.time_step += 1;
         (0..input_size).collect()
@@ -153,5 +195,5 @@ impl Optimizer for Adam {
         };
 
         (moment_bar * self.learning_rate) / velocity_sqrt
-    }
+    }*/
 }

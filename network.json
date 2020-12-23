@@ -7,8 +7,8 @@
         }
     ],
     "optimizer": {
-        "name": "adam",
-        "learning_rate": 0.002
+        "name": "sgd",
+        "learning_rate": 0.1
     },
     "metric": {
         "name": "accuracy",

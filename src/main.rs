@@ -84,7 +84,7 @@ fn main() -> Result<(), String> {
             println!("Finished after {} seconds\n", elapsed.as_secs_f32());
 
             for (input, output) in result.inputs.iter().zip(result.outputs) {
-                println!("{}: {} {}", input, network.predict(input), output);
+                println!("{}: {} {}", input.t(), network.predict(input).t(), output.t());
             }
 
             choose_to_save(&args, &network)

@@ -1,4 +1,4 @@
-use ndarray::Array1;
+use ndarray::Array2;
 
 /// Neuron activation function used for feed forward
 /// and backprop methods in Network training
@@ -8,14 +8,14 @@ pub trait ActivationFn: DynClone {
     /// # Arguments
     ///
     /// * `x` - Row vector of input values
-    fn call(&self, x: &Array1<f64>) -> Array1<f64>;
+    fn call(&self, x: &Array2<f64>) -> Array2<f64>;
 
     /// First derivative of the activation function
     ///
     /// # Arguments
     ///
     /// * `x` - Row vector of input values
-    fn prime(&self, x: &Array1<f64>) -> Array1<f64>;
+    fn prime(&self, x: &Array2<f64>) -> Array2<f64>;
 }
 
 pub trait DynClone {
@@ -61,11 +61,11 @@ fn sigmoid_prime(x: f64) -> f64 {
 }
 
 impl ActivationFn for Sigmoid {
-    fn call(&self, x: &Array1<f64>) -> Array1<f64> {
+    fn call(&self, x: &Array2<f64>) -> Array2<f64> {
         x.mapv(sigmoid)
     }
 
-    fn prime(&self, x: &Array1<f64>) -> Array1<f64> {
+    fn prime(&self, x: &Array2<f64>) -> Array2<f64> {
         x.mapv(sigmoid_prime)
     }
 }
@@ -102,11 +102,11 @@ fn relu_prime(x: f64) -> f64 {
 }
 
 impl ActivationFn for ReLU {
-    fn call(&self, x: &Array1<f64>) -> Array1<f64> {
+    fn call(&self, x: &Array2<f64>) -> Array2<f64> {
         x.mapv(relu)
     }
 
-    fn prime(&self, x: &Array1<f64>) -> Array1<f64> {
+    fn prime(&self, x: &Array2<f64>) -> Array2<f64> {
         x.mapv(relu_prime)
     }
 }
@@ -143,11 +143,11 @@ fn leaky_relu_prime(x: f64) -> f64 {
 }
 
 impl ActivationFn for LeakyReLU {
-    fn call(&self, x: &Array1<f64>) -> Array1<f64> {
+    fn call(&self, x: &Array2<f64>) -> Array2<f64> {
         x.mapv(leaky_relu)
     }
 
-    fn prime(&self, x: &Array1<f64>) -> Array1<f64> {
+    fn prime(&self, x: &Array2<f64>) -> Array2<f64> {
         x.mapv(leaky_relu_prime)
     }
 }
