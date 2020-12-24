@@ -1,5 +1,5 @@
 use approx::AbsDiffEq;
-use ndarray::Array1;
+use ndarray::Array2;
 
 use serde_json::Map;
 use serde_json::Value;
@@ -13,7 +13,7 @@ pub trait Metric {
     ///
     /// * `o` - Actual values
     /// * `y` - Expected values
-    fn call(&self, o: &Array1<f64>, y: &Array1<f64>) -> bool;
+    fn call(&self, o: &Array2<f64>, y: &Array2<f64>) -> bool;
 }
 
 /// Metric that is satisfied when all values are accurate
@@ -37,7 +37,7 @@ impl Accuracy {
 }
 
 impl Metric for Accuracy {
-    fn call(&self, o: &Array1<f64>, y: &Array1<f64>) -> bool {
+    fn call(&self, o: &Array2<f64>, y: &Array2<f64>) -> bool {
         o.abs_diff_eq(y, self.epsilon)
     }
 }

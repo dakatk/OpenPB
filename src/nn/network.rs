@@ -1,146 +1,15 @@
-use crate::nn::activations::ActivationFn;
-use crate::nn::costs::Cost;
-use crate::nn::metrics::Metric;
-use crate::nn::optimizers::Optimizer;
+use super::activations::ActivationFn;
+use super::costs::Cost;
+use super::metrics::Metric;
+use super::optimizers::Optimizer;
+use super::layer::Layer;
 
-use ndarray::{Array, Array1, Array2, Axis};
-use ndarray_rand::rand_distr::Uniform;
-use ndarray_rand::RandomExt;
+use ndarray::Array2;
+
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 
 use serde::ser::{Serialize, SerializeStruct, Serializer};
-
-/// A single Layer in the Network
-struct Layer {
-    /// Matrix of weights (shape: neurons x inputs)
-    weights: Array2<f64>,
-
-    /// Vector of bias offsets
-    biases: Array1<f64>,
-
-    /// Input vector recorded during the feed-forward process
-    inputs: Array1<f64>,
-
-    /// Activation values: (weights dot inputs) + biases
-    activations: Array1<f64>,
-
-    /// Delta values computed using the first derivative of
-    /// the Layer's activation function during backprop. Used
-    /// to compute the gradient during the update stage
-    delta: Array1<f64>,
-
-    /// Number of neurons, determines how many
-    /// weights/biases are present
-    neurons: usize,
-
-    /// Function that determines the activation of individual neurons
-    activation_fn: Box<dyn ActivationFn>
-}
-
-impl Layer {
-    /// # Arguments
-    ///
-    /// * `neurons` - Number of neurons, determines how many weights/biases are present
-    /// * `inputs` - Size of expected input vector
-    /// * `activation_fn` - Function that determines the activation of individual neurons
-    fn new(neurons: usize, inputs: usize, activation_fn: Box<dyn ActivationFn>) -> Layer {
-        Layer {
-            weights: Array::random((neurons, inputs), Uniform::new(0., 1.)),
-            biases: Array::random(neurons, Uniform::new(0., 1.)),
-            inputs: Array::zeros(inputs),
-            activations: Array::zeros(neurons),
-            delta: Array::zeros(neurons),
-            neurons,
-            activation_fn
-        }
-    }
-
-    /// Feedforward step for an individual Layer. Used for predicting outputs from a given input
-    ///
-    /// # Arguments
-    ///
-    /// * `inputs` - Input vector to calculate activation values
-    fn feed_forward(&mut self, inputs: &Array1<f64>) -> Array1<f64> {
-        let activations: Array1<f64> = self.weights.dot(inputs) + &self.biases;
-
-        self.inputs.assign(inputs);
-        self.activations.assign(&activations);
-
-        self.activation_fn.call(&activations)
-    }
-
-    fn back_prop(
-        &mut self,
-        actual: &Array1<f64>,
-        target: &Array1<f64>,
-        attached_layer: Option<Layer>,
-        cost: Box<dyn Cost>
-    ) {
-        let prev_delta: Array1<f64>;
-
-        match attached_layer {
-            Some(layer) => prev_delta = layer.weights.t().dot(&layer.delta),
-            _ => prev_delta = cost.prime(&actual, &target)
-        };
-
-        self.delta = self.activation_fn.prime(&self.activations) * &prev_delta;
-    }
-
-    /// Adjusts the weights/biases of the Layer based on the calculated delta,
-    /// input vector, and chosen Optimization method
-    ///
-    /// # Arguments
-    ///
-    /// * `index` - Numeric index of the current Layer's placement within the Network
-    /// * `optimizer` - Optimization method used to perform perform gradient descent
-    fn update<'a>(&mut self, index: usize, optimizer: &mut (dyn Optimizer + 'a)) {
-        let gradient: Array2<f64> = {
-            let delta: Array2<f64> = self.delta.clone().insert_axis(Axis(1));
-            let inputs: Array2<f64> = self.inputs.clone().insert_axis(Axis(0));
-
-            delta.dot(&inputs)
-        };
-
-        let weights: Array2<f64> = {
-            let delta_weights = -optimizer.delta(index, &gradient);
-            delta_weights + &self.weights
-        };
-
-        let biases: Array1<f64> = {
-            let delta_biases = -optimizer.learning_rate() * &self.delta;
-            delta_biases + &self.biases
-        };
-
-        self.weights.assign(&weights);
-        self.biases.assign(&biases);
-    }
-}
-
-impl Clone for Layer {
-    fn clone(&self) -> Layer {
-        Layer {
-            weights: self.weights.to_owned(),
-            biases: self.biases.to_owned(),
-            inputs: self.inputs.to_owned(),
-            activations: self.activations.to_owned(),
-            delta: self.delta.to_owned(),
-            neurons: self.neurons,
-            activation_fn: self.activation_fn.clone()
-        }
-    }
-}
-
-impl Serialize for Layer {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer
-    {
-        let mut s = serializer.serialize_struct("Layer", 2)?;
-        s.serialize_field("weights", &self.weights)?;
-        s.serialize_field("biases", &self.biases)?;
-
-        s.end()
-    }
-}
 
 pub struct Network {
     /// Input, hidden, and output layers. Each layer is considered
@@ -230,20 +99,27 @@ impl Network {
     /// * `epochs` - Maximum number of training cycles
     pub fn fit(
         &mut self,
-        inputs: &[Array1<f64>],
-        outputs: &[Array1<f64>],
+        inputs: &[Array2<f64>],
+        outputs: &[Array2<f64>],
         mut optimizer: Box<dyn Optimizer>,
         metric: Box<dyn Metric>,
         epochs: u64
-    ) -> Vec<Array1<f64>> {
+    ) -> Vec<Array2<f64>> {
+        let mut rng = thread_rng();
         for epoch in 1..=epochs {
             let mut early_stop = true;
-            let samples = optimizer.next(inputs.len());
+            let mut samples: Vec<usize> = (0..inputs.len()).collect();
+
+            samples.shuffle(&mut rng);
 
             for sample in samples {
-                let network_output: Array1<f64> = self.predict(&inputs[sample]);
-                let len: usize = self.layers.to_owned().len();
+                let network_output: Array2<f64> = self.predict(&inputs[sample]);
 
+                if !metric.call(&network_output, &outputs[sample]) {
+                    early_stop = false;
+                }
+                
+                let len: usize = self.layers.to_owned().len();
                 let mut attached_layer: Option<Layer>;
 
                 for i in (0..len).rev() {
@@ -263,14 +139,7 @@ impl Network {
                         self.cost.clone()
                     );
                 }
-
-                for (i, layer) in self.layers.iter_mut().enumerate() {
-                    layer.update(i, &mut *optimizer);
-                }
-
-                if !metric.call(&network_output, &outputs[sample]) {
-                    early_stop = false;
-                }
+                optimizer.update(&mut self.layers);
             }
 
             if early_stop {
@@ -279,7 +148,7 @@ impl Network {
             }
         }
 
-        let mut errors: Vec<Array1<f64>> = vec![];
+        let mut errors: Vec<Array2<f64>> = vec![];
 
         for (input, output) in inputs.iter().zip(outputs) {
             let error = {
@@ -299,8 +168,8 @@ impl Network {
     /// # Arguments
     ///
     /// * `inputs` - Input vector
-    pub fn predict(&mut self, inputs: &Array1<f64>) -> Array1<f64> {
-        let mut output: Array1<f64> = inputs.to_owned();
+    pub fn predict(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
+        let mut output: Array2<f64> = inputs.to_owned();
 
         for layer in self.layers.iter_mut() {
             output = layer.feed_forward(&output);

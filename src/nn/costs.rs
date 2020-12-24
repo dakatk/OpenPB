@@ -1,4 +1,4 @@
-use ndarray::Array1;
+use ndarray::Array2;
 
 /// Cost or loss function to determine the Network's error
 pub trait Cost: DynClone {
@@ -8,7 +8,7 @@ pub trait Cost: DynClone {
     ///
     /// * `o` - Actual values
     /// * `y` - Expected values
-    fn prime(&self, o: &Array1<f64>, y: &Array1<f64>) -> Array1<f64>;
+    fn prime(&self, o: &Array2<f64>, y: &Array2<f64>) -> Array2<f64>;
 }
 
 pub trait DynClone {
@@ -36,7 +36,7 @@ impl Clone for Box<dyn Cost> {
 pub struct MSE;
 
 impl Cost for MSE {
-    fn prime(&self, o: &Array1<f64>, y: &Array1<f64>) -> Array1<f64> {
+    fn prime(&self, o: &Array2<f64>, y: &Array2<f64>) -> Array2<f64> {
         o - y
     }
 }

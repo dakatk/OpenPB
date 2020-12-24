@@ -4,7 +4,7 @@ use crate::nn::metrics::{Accuracy, Metric};
 use crate::nn::network::Network;
 use crate::nn::optimizers::{Adam, Optimizer, SGD};
 
-use ndarray::Array1;
+use ndarray::Array2;
 
 use serde::Deserialize;
 use serde_json::{Map, Value};
@@ -26,7 +26,7 @@ struct InputDe {
     size: usize,
 
     /// All input vectors
-    data: Vec<Array1<f64>>
+    data: Vec<Array2<f64>>
 }
 
 /// Deserialized values representing the output data in JSON
@@ -39,7 +39,7 @@ struct OutputDe {
     size: usize,
 
     /// All output vectors
-    data: Vec<Array1<f64>>
+    data: Vec<Array2<f64>>
 }
 
 /// Deserialized values representing both input and output data in JSON
@@ -103,8 +103,8 @@ struct NetworkDe {
 
 pub struct NetworkDataDe {
     pub network: Network,
-    pub inputs: Vec<Array1<f64>>,
-    pub outputs: Vec<Array1<f64>>,
+    pub inputs: Vec<Array2<f64>>,
+    pub outputs: Vec<Array2<f64>>,
     pub metric: Box<dyn Metric>,
     pub optimizer: Box<dyn Optimizer>,
     pub epochs: u64
