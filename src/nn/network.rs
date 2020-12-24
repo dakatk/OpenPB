@@ -71,7 +71,17 @@ impl Layer {
         self.activation_fn.call(&activations)
     }
 
+    /// Backpropogation step where the deltas for each layer are calculated
+    /// (do this step before gradient descent)
     /// 
+    /// # Arguments
+    /// 
+    /// * `actual` - The predicted output produced by the network
+    /// * `target` - The expected output value
+    /// * `attached_layer` - The next layer in the network. Should be
+    /// 'None' if 'self' is the layer that produces the final output
+    /// * `cost` - The cost or loss function associated with the 
+    /// training setup
     fn back_prop(
         &mut self,
         actual: &Array2<f64>,
