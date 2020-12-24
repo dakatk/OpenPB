@@ -1,7 +1,5 @@
 use ndarray::Array2;
-use network::Layer;
-
-use super::network;
+use super::network::Layer;
 
 /// Momentum constant
 const BETA_1: f64 = 0.9;
@@ -48,8 +46,8 @@ impl Optimizer for SGD {
     fn update(&mut self, layers: &mut Vec<Layer>) {
 
         for i in 0..layers.len() {
-            let delta_weights = layers[i].delta.dot(&layers[i].inputs.t());
-            let delta_biases = self.learning_rate * &layers[i].delta;
+            let delta_weights: Array2<f64> = layers[i].delta.dot(&layers[i].inputs.t());
+            let delta_biases: Array2<f64> = self.learning_rate * &layers[i].delta;
 
             if self.velocities.len() <= i {
                 self.velocities.push(Array2::zeros(delta_weights.dim()));
@@ -98,7 +96,7 @@ impl Optimizer for Adam {
         
         for i in 0..layers.len() {
             let delta_weights: Array2<f64> = layers[i].delta.dot(&layers[i].inputs.t());
-            let delta_biases:Array2<f64> = self.learning_rate * &layers[i].delta;
+            let delta_biases: Array2<f64> = self.learning_rate * &layers[i].delta;
 
             if self.velocities.len() <= i {
                 self.velocities.push(Array2::zeros(delta_weights.dim()));

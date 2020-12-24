@@ -1,7 +1,7 @@
-use crate::nn::activations::ActivationFn;
-use crate::nn::costs::Cost;
-use crate::nn::metrics::Metric;
-use crate::nn::optimizers::Optimizer;
+use super::activations::ActivationFn;
+use super::costs::Cost;
+use super::metrics::Metric;
+use super::optimizers::Optimizer;
 
 use ndarray::Array2;
 use ndarray_rand::rand_distr::Uniform;
@@ -12,24 +12,24 @@ use rand::thread_rng;
 
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-/// A single Layer in the Network
+/// Representation of a single Layer in the Network
 pub struct Layer {
+    /// Delta values computed using the first derivative of
+    /// the Layer's activation function during backprop. Used
+    /// to compute the gradient during the update stage
+    pub delta: Array2<f64>,
+
+    /// Input vector recorded during the feed-forward process
+    pub inputs: Array2<f64>,
+
     /// Matrix of weights (shape: neurons x inputs)
     weights: Array2<f64>,
 
     /// Vector of bias offsets
     biases: Array2<f64>,
 
-    /// Input vector recorded during the feed-forward process
-    pub inputs: Array2<f64>,
-
     /// Activation values: (weights dot inputs) + biases
     activations: Array2<f64>,
-
-    /// Delta values computed using the first derivative of
-    /// the Layer's activation function during backprop. Used
-    /// to compute the gradient during the update stage
-    pub delta: Array2<f64>,
 
     /// Number of neurons, determines how many
     /// weights/biases are present
