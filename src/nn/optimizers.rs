@@ -1,5 +1,5 @@
 use ndarray::Array2;
-use super::network::Layer;
+use super::layer::Layer;
 
 /// Momentum constant
 const BETA_1: f64 = 0.9;
