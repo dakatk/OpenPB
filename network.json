@@ -4,7 +4,7 @@
         {
             "neurons": 6,
             "dropout": 0.1,
-            "activation": "sigmoid"
+            "activation": "relu"
         }
     ],
     "optimizer": {

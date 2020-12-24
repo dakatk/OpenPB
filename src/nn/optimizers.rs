@@ -1,11 +1,11 @@
 use ndarray::Array2;
 use super::layer::Layer;
 
-/// Momentum constant
-const BETA_1: f64 = 0.9;
+/// Default momentum constant
+pub const DEFAULT_BETA_1: f64 = 0.9;
 
-/// Secondary momentum constant
-const BETA_2: f64 = 0.999;
+/// Default secondary momentum constant
+pub const DEFAULT_BETA_2: f64 = 0.999;
 
 /// Optimizer functions that's used to determine how a Network's weights should be
 /// Adjusted after each training step
@@ -43,6 +43,7 @@ impl SGD {
 }
 
 impl Optimizer for SGD {
+    // TODO add batch support
     fn update(&mut self, layers: &mut Vec<Layer>) {
 
         for i in 0..layers.len() {
@@ -54,7 +55,7 @@ impl Optimizer for SGD {
             }
             
             let moment: Array2<f64> =
-                (&self.velocities[i] * BETA_1) + (delta_weights * self.learning_rate);
+                (&self.velocities[i] * DEFAULT_BETA_1) + (delta_weights * self.learning_rate);
 
             self.velocities[i].assign(&moment);
 
@@ -106,23 +107,23 @@ impl Optimizer for Adam {
                 self.moments.push(Array2::zeros(delta_weights.dim()));
             }
 
-            let moment: Array2<f64> = (&self.moments[i] * BETA_1) + (&delta_weights * (1. - BETA_1));
+            let moment: Array2<f64> = (&self.moments[i] * DEFAULT_BETA_1) + (&delta_weights * (1. - DEFAULT_BETA_1));
 
             let velocity: Array2<f64> = {
                 let grad_squard = delta_weights.mapv(|el| el * el);
-                (&self.velocities[i] * BETA_2) + (grad_squard * (1. - BETA_2))
+                (&self.velocities[i] * DEFAULT_BETA_2) + (grad_squard * (1. - DEFAULT_BETA_2))
             };
 
             self.moments[i].assign(&moment);
             self.velocities[i].assign(&velocity);
 
             let moment_bar: Array2<f64> = {
-                let beta1_t = 1. - BETA_1.powi(self.time_step as i32);
+                let beta1_t = 1. - DEFAULT_BETA_1.powi(self.time_step as i32);
                 self.moments[i].mapv(|el| el / beta1_t)
             };
 
             let velocity_sqrt: Array2<f64> = {
-                let beta2_t = 1. - BETA_2.powi(self.time_step as i32);
+                let beta2_t = 1. - DEFAULT_BETA_2.powi(self.time_step as i32);
                 let velocity_bar: Array2<f64> = self.velocities[i].mapv(|el| el / beta2_t);
 
                 velocity_bar.mapv(|el| f64::sqrt(el) + 1e-7)

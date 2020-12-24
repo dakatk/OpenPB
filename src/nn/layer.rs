@@ -44,13 +44,23 @@ impl Layer {
     /// * `inputs` - Size of expected input vector
     /// * `activation_fn` - Function that determines the activation of individual neurons
     pub fn new(neurons: usize, inputs: usize, activation_fn: Box<dyn ActivationFn>, dropout: Option<f32>) -> Layer {
+        let weights: Array2<f64> = Array2::random((neurons, inputs), Uniform::new(0., 1.));
+        let weights: Array2<f64> = weights / f64::sqrt(inputs as f64); // TODO maybe use this in the random dist instead?
+
+        let biases: Array2<f64> = Array2::random((neurons, 1), Uniform::new(0., 1.));
+
+        let inputs: Array2<f64> = Array2::zeros((inputs, 1));
+        let activations: Array2<f64> = Array2::zeros((neurons, 1));
+
+        let delta: Array2<f64> = Array2::zeros((neurons, 1));
+
         Layer {
-            delta: Array2::zeros((neurons, 1)),
-            inputs: Array2::zeros((inputs, 1)),
+            delta,
+            inputs,
             neurons,
-            weights: Array2::random((neurons, inputs), Uniform::new(0., 1.)),
-            biases: Array2::random((neurons, 1), Uniform::new(0., 1.)),
-            activations: Array2::zeros((neurons, 1)),
+            weights,
+            biases,
+            activations,
             activation_fn,
             dropout
         }
@@ -62,6 +72,9 @@ impl Layer {
     ///
     /// * `inputs` - Input vector to calculate activation values
     pub fn feed_forward(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
+
+        // TODO if given neuron drops out, produce a value of zero for the corresponding input cell
+        // (equivalent to the neuron not existing)
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
 
         self.inputs.assign(inputs);

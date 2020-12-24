@@ -1,7 +1,7 @@
 {
     "inputs": {
         "neurons": 8,
-        "activation": "sigmoid",
+        "activation": "leakyrelu",
         "size": 2,
         "data": [
             {"v": 1, "dim": [2, 1], "data": [0.0, 0.0]},
@@ -11,7 +11,7 @@
         ]
     },
     "outputs": {
-        "activation": "sigmoid",
+        "activation": "leakyrelu",
         "size": 4,
         "data": [
             {"v": 1, "dim": [4, 1], "data": [0.0, 0.0, 0.0, 1.0]},
