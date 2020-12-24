@@ -16,7 +16,6 @@ use std::time::{Duration, SystemTime};
 
 #[doc(hidden)]
 fn main() -> Result<(), String> {
-    // TODO extract this to YAML file?
     let args: ArgMatches = App::new("Open Neural Network Benchmarker (ONNB)")
         .version("0.1")
         .author("Dusten Knull <dakatk97@gmail.com>")
