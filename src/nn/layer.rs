@@ -31,7 +31,10 @@ pub struct Layer {
     activations: Array2<f64>,
 
     /// Function that determines the activation of individual neurons
-    activation_fn: Box<dyn ActivationFn>
+    activation_fn: Box<dyn ActivationFn>,
+
+    /// Dropout regularization chance
+    dropout: Option<f32>
 }
 
 impl Layer {
@@ -40,15 +43,16 @@ impl Layer {
     /// * `neurons` - Number of neurons, determines how many weights/biases are present
     /// * `inputs` - Size of expected input vector
     /// * `activation_fn` - Function that determines the activation of individual neurons
-    pub fn new(neurons: usize, inputs: usize, activation_fn: Box<dyn ActivationFn>) -> Layer {
+    pub fn new(neurons: usize, inputs: usize, activation_fn: Box<dyn ActivationFn>, dropout: Option<f32>) -> Layer {
         Layer {
+            delta: Array2::zeros((neurons, 1)),
+            inputs: Array2::zeros((inputs, 1)),
+            neurons,
             weights: Array2::random((neurons, inputs), Uniform::new(0., 1.)),
             biases: Array2::random((neurons, 1), Uniform::new(0., 1.)),
-            inputs: Array2::zeros((inputs, 1)),
             activations: Array2::zeros((neurons, 1)),
-            delta: Array2::zeros((neurons, 1)),
-            neurons,
-            activation_fn
+            activation_fn,
+            dropout
         }
     }
 
@@ -118,7 +122,8 @@ impl Clone for Layer {
             activations: self.activations.to_owned(),
             delta: self.delta.to_owned(),
             neurons: self.neurons,
-            activation_fn: self.activation_fn.clone()
+            activation_fn: self.activation_fn.clone(),
+            dropout: self.dropout.clone()
         }
     }
 }

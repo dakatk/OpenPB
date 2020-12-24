@@ -3,6 +3,7 @@
     "hidden_layers": [
         {
             "neurons": 6,
+            "dropout": 0.1,
             "activation": "sigmoid"
         }
     ],

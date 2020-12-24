@@ -44,9 +44,10 @@ impl Network {
         &mut self,
         neurons: usize,
         inputs: usize,
-        activation_fn: Box<dyn ActivationFn>
+        activation_fn: Box<dyn ActivationFn>,
+        dropout: Option<f32>
     ) {
-        self.layers.push(Layer::new(neurons, inputs, activation_fn));
+        self.layers.push(Layer::new(neurons, inputs, activation_fn, dropout));
     }
 
     /// Same as `add_input_layer`, but used for any other layer after. The number of
@@ -57,11 +58,16 @@ impl Network {
     /// * `neurons` - Number of neurons, determines how many weights/biases
     /// are present in the new Layer
     /// * `activation_fn` - Function that determines the activation of individual neurons
-    fn add_hidden_layer(&mut self, neurons: usize, activation_fn: Box<dyn ActivationFn>) {
+    fn add_hidden_layer(
+        &mut self, 
+        neurons: usize, 
+        activation_fn: Box<dyn ActivationFn>, 
+        dropout: Option<f32>
+    ) {
         let prev_neurons = self.layers.last_mut().unwrap().neurons;
 
         self.layers
-            .push(Layer::new(neurons, prev_neurons, activation_fn));
+            .push(Layer::new(neurons, prev_neurons, activation_fn, dropout));
     }
 
     /// Add a Layer to the next open spot in the Network's structure. This function
@@ -77,11 +83,12 @@ impl Network {
         &mut self,
         neurons: usize,
         inputs: Option<usize>,
-        activation_fn: Box<dyn ActivationFn>
+        activation_fn: Box<dyn ActivationFn>,
+        dropout: Option<f32>
     ) {
         match inputs {
-            Some(inputs) => self.add_input_layer(neurons, inputs, activation_fn),
-            _ => self.add_hidden_layer(neurons, activation_fn)
+            Some(inputs) => self.add_input_layer(neurons, inputs, activation_fn, dropout),
+            _ => self.add_hidden_layer(neurons, activation_fn, dropout)
         }
     }
 

@@ -25,6 +25,9 @@ struct InputDe {
     /// Size of each input vector
     size: usize,
 
+    /// Dropout chance (for regularization)
+    dropout: Option<f32>,
+
     /// All input vectors
     data: Vec<Array2<f64>>
 }
@@ -57,6 +60,9 @@ struct DataDe {
 struct LayerDe {
     /// Number of neurons
     neurons: usize,
+
+    /// Dropout chance (for regularization)
+    dropout: Option<f32>,
 
     /// Name of activation function
     activation: String
