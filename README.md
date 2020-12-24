@@ -6,7 +6,7 @@ This is the Open Neural Network Benchmarker, or ONNB, which is a command-line ap
 
 This tool is the spritual successor to a personal project ~~that is still under active development~~ called Sensei, which is a tool I use for observiing the activity of different neural network setups. Instead of rust, this tool is written in Python, so it's much more flexible and has access to matplotlib. Hoever, it's also significantly slower and doesn't have the optimization or safety features that Rust has. If you'd like to play around with this code, or if you want to get a feel for how this stuff works and you understand Python better than Rust, then here's a link to the Github repo: https://github.com/dakatk/Machine-Learning-Library*
 
-**Note: That project is old and not my best work. It was mostly stitched together from a series of Youtube videos explaining and barebones examples. This project is meant to be a continuation of that project, now that I understand the mathematics better. Of course, this project still only exists fro educational purposes, but I'm much happier with the code I've written for ONNB so far than what I wrote for Sensei*
+**Note: That project is old and not my best work. It was mostly stitched together from a series of Youtube videos and barebones examples. This project is meant to be a continuation of that project, now that I understand the mathematics a bit better. Of course, this project still only exists for educational purposes, but I'm much happier with the code I've written for ONNB so far than what I wrote for Sensei*
 
 ### Some features anticipated for the final product are:
  - Setups for various types of neural networks (FFNNs, CNNs, RNNs)
