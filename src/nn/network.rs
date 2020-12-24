@@ -1,9 +1,9 @@
-use super::activations::ActivationFn;
-use super::costs::Cost;
-use super::metrics::Metric;
-use super::optimizers::Optimizer;
+use crate::nn::activations::ActivationFn;
+use crate::nn::costs::Cost;
+use crate::nn::metrics::Metric;
+use crate::nn::optimizers::Optimizer;
 
-use ndarray::{Array, Array2};
+use ndarray::Array2;
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 
@@ -33,7 +33,7 @@ pub struct Layer {
 
     /// Number of neurons, determines how many
     /// weights/biases are present
-    pub neurons: usize,
+    neurons: usize,
 
     /// Function that determines the activation of individual neurons
     activation_fn: Box<dyn ActivationFn>
@@ -47,11 +47,11 @@ impl Layer {
     /// * `activation_fn` - Function that determines the activation of individual neurons
     fn new(neurons: usize, inputs: usize, activation_fn: Box<dyn ActivationFn>) -> Layer {
         Layer {
-            weights: Array::random((neurons, inputs), Uniform::new(0., 1.)),
-            biases: Array::random((neurons, 1), Uniform::new(0., 1.)),
-            inputs: Array::zeros((inputs, 1)),
-            activations: Array::zeros((neurons, 1)),
-            delta: Array::zeros((neurons, 1)),
+            weights: Array2::random((neurons, inputs), Uniform::new(0., 1.)),
+            biases: Array2::random((neurons, 1), Uniform::new(0., 1.)),
+            inputs: Array2::zeros((inputs, 1)),
+            activations: Array2::zeros((neurons, 1)),
+            delta: Array2::zeros((neurons, 1)),
             neurons,
             activation_fn
         }
@@ -71,6 +71,7 @@ impl Layer {
         self.activation_fn.call(&activations)
     }
 
+    /// 
     fn back_prop(
         &mut self,
         actual: &Array2<f64>,
@@ -88,15 +89,15 @@ impl Layer {
         self.delta = self.activation_fn.prime(&self.activations) * &prev_delta;
     }
 
-    /// Adjusts the weights and biases of the Layer 
+    /// Adjusts the weights and biases based on deltas calculated during gradient descent
     ///
     /// # Arguments
     /// 
-    /// * `delta_weights` - Change in weights
-    /// * `delta_biases` - Change in biases
+    /// * `delta_weights` - Change in the weight values
+    /// * `delta_biases` - Change in the bias values
     pub fn update(&mut self, delta_weights: &Array2<f64>, delta_biases: &Array2<f64>) {
-        let weights: Array2<f64> = delta_weights - &self.weights;
-        let biases: Array2<f64> = delta_biases - &self.biases;
+        let weights: Array2<f64> = &self.weights - delta_weights;
+        let biases: Array2<f64> = &self.biases - delta_biases;
 
         self.weights.assign(&weights);
         self.biases.assign(&biases);
@@ -228,6 +229,7 @@ impl Network {
         for epoch in 1..=epochs {
             let mut early_stop = true;
             let mut samples: Vec<usize> = (0..inputs.len()).collect();
+
             samples.shuffle(&mut rng);
 
             for sample in samples {
@@ -236,6 +238,7 @@ impl Network {
                 if !metric.call(&network_output, &outputs[sample]) {
                     early_stop = false;
                 }
+                
                 let len: usize = self.layers.to_owned().len();
                 let mut attached_layer: Option<Layer>;
 
