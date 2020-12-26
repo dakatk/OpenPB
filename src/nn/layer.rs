@@ -51,7 +51,7 @@ impl Layer {
     /// * `activation_fn` - Function that determines the activation of individual neurons
     pub fn new(neurons: usize, inputs: usize, activation_fn: Box<dyn ActivationFn>, dropout: Option<f32>) -> Layer {
         let weights: Array2<f64> = Array2::random((neurons, inputs), Uniform::new(0., 1.));
-        let weights: Array2<f64> = weights / f64::sqrt(inputs as f64); // TODO maybe use this in the random dist instead?
+        let weights: Array2<f64> = weights / f64::sqrt(inputs as f64);
 
         let biases: Array2<f64> = Array2::random((neurons, 1), Uniform::new(0., 1.));
 
@@ -129,7 +129,6 @@ impl Layer {
         attached_layer: Option<Layer>,
         cost: Box<dyn Cost>
     ) {
-        // TODO delta should be zero if neuron dropped out
         let attached_delta: Array2<f64>;
 
         match attached_layer {
@@ -142,6 +141,7 @@ impl Layer {
         match self.dropout {
             Some(_) => {
                 let zeros = Array::zeros(1);
+
                 for dropped_neuron in self.dropped_neurons.iter() {
                     self.delta.row_mut(*dropped_neuron).assign(&zeros);
                 }

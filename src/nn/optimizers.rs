@@ -1,6 +1,8 @@
 use ndarray::Array2;
 use super::layer::Layer;
 
+// TODO betas should be arguments, loaded as default values by JSON if not present
+
 /// Default momentum constant
 pub const DEFAULT_BETA_1: f64 = 0.9;
 
@@ -32,7 +34,7 @@ pub struct SGD {
 impl SGD {
     /// # Arguments
     ///
-    /// * `learning_rate` - The step size when adjusting weights for each call of gradient descent
+    /// * `learning_rate` - The step size when adjusting weights during gradient descent
     #[allow(dead_code)]
     pub fn new(learning_rate: f64) -> SGD {
         SGD {
@@ -68,7 +70,7 @@ pub struct Adam {
     /// Current step in the training process
     time_step: u16,
 
-    /// The step size when adjusting weights for each call of gradient descent
+    /// The step size when adjusting weights during gradient descent
     learning_rate: f64,
 
     /// Set of velocity values for use in RMS propogation
@@ -79,7 +81,9 @@ pub struct Adam {
 }
 
 impl Adam {
+    /// # Arguments
     ///
+    /// * `learning_rate` - The step size when adjusting weights during gradient descent
     #[allow(dead_code)]
     pub fn new(learning_rate: f64) -> Adam {
         Adam {
