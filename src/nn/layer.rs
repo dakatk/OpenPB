@@ -2,9 +2,11 @@ use super::activations::ActivationFn;
 use super::costs::Cost;
 
 use ndarray::Array2;
-use ndarray_rand::rand_distr::Uniform;
+// use ndarray_rand::rand_distr::Uniform;
+use rand::distributions::{Distribution, Uniform};
 use ndarray_rand::RandomExt;
 
+use rand::thread_rng;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 /// Representation of a single Layer in the Network
@@ -72,15 +74,32 @@ impl Layer {
     ///
     /// * `inputs` - Input vector to calculate activation values
     pub fn feed_forward(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
-
-        // TODO if given neuron drops out, produce a value of zero for the corresponding input cell
-        // (equivalent to the neuron not existing)
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
 
         self.inputs.assign(inputs);
         self.activations.assign(&activations);
 
-        self.activation_fn.call(&activations)
+        let output: Array2<f64> = self.activation_fn.call(&activations);
+
+        match self.dropout {
+            Some(dropout ) => {
+                let mut rng = thread_rng();
+                let range = Uniform::new(0.0, 1.0);
+                
+                output.mapv(
+                    |el| {
+                        let sample = range.sample(&mut rng);
+                        if sample < dropout {
+                            0.0
+                        } 
+                        else {
+                            el
+                        }
+                    } 
+                )
+            },
+            None => output
+        }
     }
 
     /// Backpropogation step where the deltas for each layer are calculated
@@ -101,6 +120,7 @@ impl Layer {
         attached_layer: Option<Layer>,
         cost: Box<dyn Cost>
     ) {
+        // TODO delta should be zero if neuron dropped out
         let prev_delta: Array2<f64>;
 
         match attached_layer {
@@ -109,6 +129,8 @@ impl Layer {
         };
 
         self.delta = self.activation_fn.prime(&self.activations) * &prev_delta;
+
+        
     }
 
     /// Adjusts the weights and biases based on deltas calculated during gradient descent
