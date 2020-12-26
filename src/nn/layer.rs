@@ -36,7 +36,11 @@ pub struct Layer {
     activation_fn: Box<dyn ActivationFn>,
 
     /// Dropout regularization chance
-    dropout: Option<f32>
+    dropout: Option<f32>,
+
+    /// Row indices of neurons that have been dropped out 
+    /// temporarily during training
+    dropped_neurons: Vec<usize>
 }
 
 impl Layer {
@@ -55,6 +59,7 @@ impl Layer {
         let activations: Array2<f64> = Array2::zeros((neurons, 1));
 
         let delta: Array2<f64> = Array2::zeros((neurons, 1));
+        let dropped_neurons: Vec<usize> = vec![];
 
         Layer {
             delta,
@@ -64,7 +69,8 @@ impl Layer {
             biases,
             activations,
             activation_fn,
-            dropout
+            dropout,
+            dropped_neurons
         }
     }
 
@@ -85,16 +91,19 @@ impl Layer {
             Some(dropout ) => {
                 let mut rng = thread_rng();
                 let range = Uniform::new(0.0, 1.0);
+
+                self.dropped_neurons.clear();
+                let mut index: usize = 0;
                 
                 output.mapv(
                     |el| {
                         let sample = range.sample(&mut rng);
                         if sample < dropout {
+                            self.dropped_neurons.push(index);
+                            index += 1;
+
                             0.0
-                        } 
-                        else {
-                            el
-                        }
+                        } else { el }
                     } 
                 )
             },
@@ -130,7 +139,12 @@ impl Layer {
 
         self.delta = self.activation_fn.prime(&self.activations) * &prev_delta;
 
-        
+        match self.dropout {
+            Some(dropout) => {
+
+            },
+            None => ()
+        }
     }
 
     /// Adjusts the weights and biases based on deltas calculated during gradient descent
@@ -158,7 +172,8 @@ impl Clone for Layer {
             delta: self.delta.to_owned(),
             neurons: self.neurons,
             activation_fn: self.activation_fn.clone(),
-            dropout: self.dropout.clone()
+            dropout: self.dropout.clone(),
+            dropped_neurons: self.dropped_neurons.clone()
         }
     }
 }
