@@ -1,7 +1,7 @@
 use super::activations::ActivationFn;
 use super::costs::Cost;
 
-use ndarray::Array2;
+use ndarray::{Array, Array2};
 // use ndarray_rand::rand_distr::Uniform;
 use rand::distributions::{Distribution, Uniform};
 use ndarray_rand::RandomExt;
@@ -130,18 +130,21 @@ impl Layer {
         cost: Box<dyn Cost>
     ) {
         // TODO delta should be zero if neuron dropped out
-        let prev_delta: Array2<f64>;
+        let attached_delta: Array2<f64>;
 
         match attached_layer {
-            Some(layer) => prev_delta = layer.weights.t().dot(&layer.delta),
-            _ => prev_delta = cost.prime(&actual, &target)
+            Some(layer) => attached_delta = layer.weights.t().dot(&layer.delta),
+            _ => attached_delta = cost.prime(&actual, &target)
         };
 
-        self.delta = self.activation_fn.prime(&self.activations) * &prev_delta;
+        self.delta = self.activation_fn.prime(&self.activations) * &attached_delta;
 
         match self.dropout {
-            Some(dropout) => {
-
+            Some(_) => {
+                let zeros = Array::zeros(1);
+                for dropped_neuron in self.dropped_neurons.iter() {
+                    self.delta.row_mut(*dropped_neuron).assign(&zeros);
+                }
             },
             None => ()
         }
