@@ -3,7 +3,7 @@
     "hidden_layers": [
         {
             "neurons": 6,
-            "dropout": 0.1,
+            "dropout": 0.5,
             "activation": "relu"
         }
     ],
