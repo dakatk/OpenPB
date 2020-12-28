@@ -3,6 +3,7 @@
 mod nn;
 mod parse_json;
 
+use ndarray::Array2;
 use nn::network::Network;
 
 use parse_json::NetworkDataDe;
@@ -15,7 +16,7 @@ use std::io::Write;
 use std::time::{Duration, SystemTime};
 
 #[doc(hidden)]
-fn main() -> Result<(), String> {
+fn main () -> Result<(), String> {
     let args: ArgMatches = App::new("Open Neural Network Benchmarker (ONNB)")
         .version("0.1")
         .author("Dusten Knull <dakatk97@gmail.com>")
@@ -83,7 +84,8 @@ fn main() -> Result<(), String> {
             println!("Finished after {} seconds\n", elapsed.as_secs_f32());
 
             for (input, output) in result.inputs.iter().zip(result.outputs) {
-                println!("{}: {} {}", input.t(), network.predict(input, None).t(), output.t());
+                let prediction: Array2<f64> = network.predict(input, None);
+                println!("{}: {} {}", input.t().row(0), prediction.t().row(0), output.t().row(0));
             }
 
             choose_to_save(&args, &network)
@@ -102,7 +104,7 @@ fn choose_to_save(args: &ArgMatches, network: &Network) -> Result<(), String> {
             .as_str()
         {
             "y" | "yes" => {
-                let out_file = user_input("Filename: ");
+                let out_file: String = user_input("Filename: ");
                 parse_json::save_layer_values(network, &out_file.as_str())
             }
             _ => Ok(())
