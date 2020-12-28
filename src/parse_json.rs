@@ -1,4 +1,4 @@
-use crate::nn::activations::{ActivationFn, LeakyReLU, ReLU, Sigmoid};
+use crate::nn::{activations::{ActivationFn, LeakyReLU, ReLU, Sigmoid}, optimizers};
 use crate::nn::costs::{Cost, MSE};
 use crate::nn::metrics::{Accuracy, Metric};
 use crate::nn::network::Network;
@@ -75,7 +75,13 @@ struct OptimizerDe {
     name: String,
 
     /// Learning rate constant
-    learning_rate: f64
+    learning_rate: f64,
+
+    /// Optional primary momentum constant
+    beta1: Option<f64>,
+
+    /// Optional secondary momentum constant
+    beta2: Option<f64>,
 }
 
 /// Deserialized values representing the evaluation Metric in JSON
@@ -208,9 +214,19 @@ fn metric_from_str(metric_data: MetricDe) -> Option<Box<dyn Metric>> {
 }
 
 fn optimizer_from_str(optimizer_data: OptimizerDe) -> Option<Box<dyn Optimizer>> {
+    let beta1 = match optimizer_data.beta1 {
+        Some(beta1) => beta1,
+        None => optimizers::DEFAULT_BETA_1
+    };
+
+    let beta2 = match optimizer_data.beta1 {
+        Some(beta2) => beta2,
+        None => optimizers::DEFAULT_BETA_2
+    };
+
     match optimizer_data.name.to_lowercase().as_str() {
-        "sgd" => Some(Box::new(SGD::new(optimizer_data.learning_rate))),
-        "adam" => Some(Box::new(Adam::new(optimizer_data.learning_rate))),
+        "sgd" => Some(Box::new(SGD::new(optimizer_data.learning_rate, beta1))),
+        "adam" => Some(Box::new(Adam::new(optimizer_data.learning_rate, beta1, beta2))),
         _ => None
     }
 }
