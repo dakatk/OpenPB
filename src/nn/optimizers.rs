@@ -1,8 +1,6 @@
 use ndarray::Array2;
 use super::layer::Layer;
 
-// TODO betas should be arguments, loaded as default values by JSON if not present
-
 /// Default momentum constant
 pub const DEFAULT_BETA_1: f64 = 0.9;
 

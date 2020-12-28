@@ -1,7 +1,7 @@
 {
     "inputs": {
-        "neurons": 8,
-        "activation": "leakyrelu",
+        "neurons": 4,
+        "activation": "relu",
         "size": 2,
         "data": [
             {"v": 1, "dim": [2, 1], "data": [0.0, 0.0]},

@@ -2,8 +2,8 @@
     "cost": "mse",
     "hidden_layers": [
         {
-            "neurons": 6,
-            "dropout": 0.5,
+            "neurons": 4,
+            "dropout": 0.2,
             "activation": "relu"
         }
     ],
