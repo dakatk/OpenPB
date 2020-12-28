@@ -28,7 +28,11 @@ pub struct SGD {
 
     /// Set of velocity values for use in classical momentum to ensure that
     /// steps are slowed down as they approach a minimum over time
-    velocities: Vec<Array2<f64>>
+    velocities: Vec<Array2<f64>>,
+
+    /// Momentum constant, typically set to 0.9 (`DEFAULT_BETA_1`) except 
+    /// in certain edge cases
+    beta: f64
 }
 
 impl SGD {
@@ -36,10 +40,11 @@ impl SGD {
     ///
     /// * `learning_rate` - The step size when adjusting weights during gradient descent
     #[allow(dead_code)]
-    pub fn new(learning_rate: f64) -> SGD {
+    pub fn new(learning_rate: f64, beta: f64) -> SGD {
         SGD {
             learning_rate,
-            velocities: vec![]
+            velocities: vec![],
+            beta
         }
     }
 }
@@ -57,7 +62,7 @@ impl Optimizer for SGD {
             }
             
             let moment: Array2<f64> =
-                (&self.velocities[i] * DEFAULT_BETA_1) + (delta_weights * self.learning_rate);
+                (&self.velocities[i] * self.beta) + (delta_weights * self.learning_rate);
 
             self.velocities[i].assign(&moment);
 
