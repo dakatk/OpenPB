@@ -3,10 +3,9 @@ use super::costs::Cost;
 
 use ndarray::{Array, Array2};
 // use ndarray_rand::rand_distr::Uniform;
-use rand::distributions::{Distribution, Uniform};
+use rand::{distributions::{Distribution, Uniform}, prelude::ThreadRng};
 use ndarray_rand::RandomExt;
 
-use rand::thread_rng;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 /// Representation of a single Layer in the Network
@@ -79,7 +78,7 @@ impl Layer {
     /// # Arguments
     ///
     /// * `inputs` - Input vector to calculate activation values
-    pub fn feed_forward(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
+    pub fn feed_forward(&mut self, inputs: &Array2<f64>, rng: &Option<ThreadRng>) -> Array2<f64> {
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
 
         self.inputs.assign(inputs);
@@ -89,15 +88,23 @@ impl Layer {
 
         match self.dropout {
             Some(dropout ) => {
-                let mut rng = thread_rng();
-                let range = Uniform::new(0.0, 1.0);
-
-                self.dropped_neurons.clear();
-                let mut index: usize = 0;
                 
+                self.dropped_neurons.clear();
+                self.map_output_with_dropout(output, dropout, rng)
+            },
+            None => output
+        }
+    }
+
+    fn map_output_with_dropout(&mut self, output: Array2<f64>, dropout: f32, rng: &Option<ThreadRng>) -> Array2<f64> {
+        match rng {
+            Some(mut some_rng) => {
+                let range = Uniform::new(0.0, 1.0);
+                let mut index: usize = 0;
+
                 output.mapv(
                     |el| {
-                        let sample = range.sample(&mut rng);
+                        let sample = range.sample(&mut some_rng);
                         if sample < dropout {
                             self.dropped_neurons.push(index);
                             index += 1;

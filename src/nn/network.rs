@@ -6,7 +6,7 @@ use super::layer::Layer;
 
 use ndarray::Array2;
 
-use rand::seq::SliceRandom;
+use rand::{prelude::ThreadRng, seq::SliceRandom};
 use rand::thread_rng;
 
 use serde::ser::{Serialize, SerializeStruct, Serializer};
@@ -120,7 +120,7 @@ impl Network {
             samples.shuffle(&mut rng);
 
             for sample in samples {
-                let network_output: Array2<f64> = self.predict(&inputs[sample]);
+                let network_output: Array2<f64> = self.predict(&inputs[sample], Some(rng));
 
                 if !metric.call(&network_output, &outputs[sample]) {
                     early_stop = false;
@@ -159,7 +159,7 @@ impl Network {
 
         for (input, output) in inputs.iter().zip(outputs) {
             let error = {
-                let network_output = self.predict(input);
+                let network_output = self.predict(input, None);
                 self.cost.prime(&network_output, output)
             };
 
@@ -175,11 +175,11 @@ impl Network {
     /// # Arguments
     ///
     /// * `inputs` - Input vector
-    pub fn predict(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
+    pub fn predict(&mut self, inputs: &Array2<f64>, rng: Option<ThreadRng>) -> Array2<f64> {
         let mut output: Array2<f64> = inputs.to_owned();
 
         for layer in self.layers.iter_mut() {
-            output = layer.feed_forward(&output);
+            output = layer.feed_forward(&output, &rng);
         }
 
         output
