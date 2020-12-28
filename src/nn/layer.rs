@@ -1,8 +1,9 @@
 use super::activations::ActivationFn;
 use super::costs::Cost;
 
-use ndarray::Array2;
-use ndarray_rand::rand_distr::Uniform;
+use ndarray::{Array, Array2};
+
+use rand::{distributions::{Uniform, Distribution}, prelude::ThreadRng};
 use ndarray_rand::RandomExt;
 
 use serde::ser::{Serialize, SerializeStruct, Serializer};
@@ -31,7 +32,14 @@ pub struct Layer {
     activations: Array2<f64>,
 
     /// Function that determines the activation of individual neurons
-    activation_fn: Box<dyn ActivationFn>
+    activation_fn: Box<dyn ActivationFn>,
+
+    /// Dropout regularization chance
+    dropout: Option<f32>,
+
+    /// Row indices of neurons that have been dropped out 
+    /// temporarily during training
+    dropped_neurons: Vec<usize>
 }
 
 impl Layer {
@@ -40,15 +48,28 @@ impl Layer {
     /// * `neurons` - Number of neurons, determines how many weights/biases are present
     /// * `inputs` - Size of expected input vector
     /// * `activation_fn` - Function that determines the activation of individual neurons
-    pub fn new(neurons: usize, inputs: usize, activation_fn: Box<dyn ActivationFn>) -> Layer {
+    pub fn new(neurons: usize, inputs: usize, activation_fn: Box<dyn ActivationFn>, dropout: Option<f32>) -> Layer {
+        let weights: Array2<f64> = Array2::random((neurons, inputs), Uniform::new(0., 1.));
+        let weights: Array2<f64> = weights / f64::sqrt(inputs as f64);
+
+        let biases: Array2<f64> = Array2::random((neurons, 1), Uniform::new(0., 1.));
+
+        let inputs: Array2<f64> = Array2::zeros((inputs, 1));
+        let activations: Array2<f64> = Array2::zeros((neurons, 1));
+
+        let delta: Array2<f64> = Array2::zeros((neurons, 1));
+        let dropped_neurons: Vec<usize> = vec![];
+
         Layer {
-            weights: Array2::random((neurons, inputs), Uniform::new(0., 1.)),
-            biases: Array2::random((neurons, 1), Uniform::new(0., 1.)),
-            inputs: Array2::zeros((inputs, 1)),
-            activations: Array2::zeros((neurons, 1)),
-            delta: Array2::zeros((neurons, 1)),
+            delta,
+            inputs,
             neurons,
-            activation_fn
+            weights,
+            biases,
+            activations,
+            activation_fn,
+            dropout,
+            dropped_neurons
         }
     }
 
@@ -57,13 +78,46 @@ impl Layer {
     /// # Arguments
     ///
     /// * `inputs` - Input vector to calculate activation values
-    pub fn feed_forward(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
+    pub fn feed_forward(&mut self, inputs: &Array2<f64>, rng: &Option<ThreadRng>) -> Array2<f64> {
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
 
         self.inputs.assign(inputs);
         self.activations.assign(&activations);
 
-        self.activation_fn.call(&activations)
+        let output: Array2<f64> = self.activation_fn.call(&activations);
+
+        match self.dropout {
+            Some(dropout ) => {
+
+                self.dropped_neurons.clear();
+                self.map_output_with_dropout(output, dropout, rng)
+            },
+            None => output
+        }
+    }
+
+    fn map_output_with_dropout(&mut self, output: Array2<f64>, dropout: f32, rng: &Option<ThreadRng>) -> Array2<f64> {
+        match rng {
+            Some(mut some_rng) => {
+                let mut index: usize = 0;
+                let range = Uniform::new(0.0, 1.0);
+
+                output.mapv(
+                    |el| {
+                        let sample: f32 = range.sample(&mut some_rng);
+
+                        let value = if sample < dropout {
+                            self.dropped_neurons.push(index);
+                            0.0
+                        } else { el };
+
+                        index += 1;
+                        value
+                    } 
+                )
+            },
+            None => output
+        }
     }
 
     /// Backpropogation step where the deltas for each layer are calculated
@@ -84,14 +138,25 @@ impl Layer {
         attached_layer: Option<Layer>,
         cost: Box<dyn Cost>
     ) {
-        let prev_delta: Array2<f64>;
+        let attached_delta: Array2<f64>;
 
         match attached_layer {
-            Some(layer) => prev_delta = layer.weights.t().dot(&layer.delta),
-            _ => prev_delta = cost.prime(&actual, &target)
+            Some(layer) => attached_delta = layer.weights.t().dot(&layer.delta),
+            _ => attached_delta = cost.prime(&actual, &target)
         };
 
-        self.delta = self.activation_fn.prime(&self.activations) * &prev_delta;
+        self.delta = self.activation_fn.prime(&self.activations) * &attached_delta;
+
+        match self.dropout {
+            Some(_) => {
+                let zeros = Array::zeros(1);
+
+                for dropped_neuron in self.dropped_neurons.iter() {
+                    self.delta.row_mut(*dropped_neuron).assign(&zeros);
+                }
+            },
+            None => ()
+        }
     }
 
     /// Adjusts the weights and biases based on deltas calculated during gradient descent
@@ -118,7 +183,9 @@ impl Clone for Layer {
             activations: self.activations.to_owned(),
             delta: self.delta.to_owned(),
             neurons: self.neurons,
-            activation_fn: self.activation_fn.clone()
+            activation_fn: self.activation_fn.clone(),
+            dropout: self.dropout.clone(),
+            dropped_neurons: self.dropped_neurons.clone()
         }
     }
 }

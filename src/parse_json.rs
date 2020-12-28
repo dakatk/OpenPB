@@ -25,6 +25,9 @@ struct InputDe {
     /// Size of each input vector
     size: usize,
 
+    /// Dropout chance (for regularization)
+    dropout: Option<f32>,
+
     /// All input vectors
     data: Vec<Array2<f64>>
 }
@@ -57,6 +60,9 @@ struct DataDe {
 struct LayerDe {
     /// Number of neurons
     neurons: usize,
+
+    /// Dropout chance (for regularization)
+    dropout: Option<f32>,
 
     /// Name of activation function
     activation: String
@@ -137,7 +143,8 @@ impl NetworkDataDe {
         network.add_layer(
             input_values.neurons,
             Some(input_values.size),
-            input_activation
+            input_activation,
+            input_values.dropout
         );
 
         for layer in network_values.hidden_layers.iter() {
@@ -146,7 +153,7 @@ impl NetworkDataDe {
                 None => return Err("Invalid activation function name")
             };
 
-            network.add_layer(layer.neurons, None, layer_activation);
+            network.add_layer(layer.neurons, None, layer_activation, layer.dropout);
         }
 
         let output_activation = match activation_from_str(output_values.activation.to_lowercase()) {
@@ -154,7 +161,7 @@ impl NetworkDataDe {
             None => return Err("Invalid activation function name")
         };
 
-        network.add_layer(output_values.size, None, output_activation);
+        network.add_layer(output_values.size, None, output_activation, None);
 
         let metric = match metric_from_str(network_values.metric) {
             Some(value) => value,

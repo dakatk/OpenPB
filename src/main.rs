@@ -16,7 +16,6 @@ use std::time::{Duration, SystemTime};
 
 #[doc(hidden)]
 fn main() -> Result<(), String> {
-    // TODO extract this to YAML file?
     let args: ArgMatches = App::new("Open Neural Network Benchmarker (ONNB)")
         .version("0.1")
         .author("Dusten Knull <dakatk97@gmail.com>")
@@ -84,7 +83,7 @@ fn main() -> Result<(), String> {
             println!("Finished after {} seconds\n", elapsed.as_secs_f32());
 
             for (input, output) in result.inputs.iter().zip(result.outputs) {
-                println!("{}: {} {}", input.t(), network.predict(input).t(), output.t());
+                println!("{}: {} {}", input.t(), network.predict(input, None).t(), output.t());
             }
 
             choose_to_save(&args, &network)

@@ -3,7 +3,8 @@
     "hidden_layers": [
         {
             "neurons": 6,
-            "activation": "sigmoid"
+            "dropout": 0.1,
+            "activation": "relu"
         }
     ],
     "optimizer": {

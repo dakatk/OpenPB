@@ -6,7 +6,7 @@ use super::layer::Layer;
 
 use ndarray::Array2;
 
-use rand::seq::SliceRandom;
+use rand::{prelude::ThreadRng, seq::SliceRandom};
 use rand::thread_rng;
 
 use serde::ser::{Serialize, SerializeStruct, Serializer};
@@ -44,9 +44,10 @@ impl Network {
         &mut self,
         neurons: usize,
         inputs: usize,
-        activation_fn: Box<dyn ActivationFn>
+        activation_fn: Box<dyn ActivationFn>,
+        dropout: Option<f32>
     ) {
-        self.layers.push(Layer::new(neurons, inputs, activation_fn));
+        self.layers.push(Layer::new(neurons, inputs, activation_fn, dropout));
     }
 
     /// Same as `add_input_layer`, but used for any other layer after. The number of
@@ -57,11 +58,16 @@ impl Network {
     /// * `neurons` - Number of neurons, determines how many weights/biases
     /// are present in the new Layer
     /// * `activation_fn` - Function that determines the activation of individual neurons
-    fn add_hidden_layer(&mut self, neurons: usize, activation_fn: Box<dyn ActivationFn>) {
+    fn add_hidden_layer(
+        &mut self, 
+        neurons: usize, 
+        activation_fn: Box<dyn ActivationFn>, 
+        dropout: Option<f32>
+    ) {
         let prev_neurons = self.layers.last_mut().unwrap().neurons;
 
         self.layers
-            .push(Layer::new(neurons, prev_neurons, activation_fn));
+            .push(Layer::new(neurons, prev_neurons, activation_fn, dropout));
     }
 
     /// Add a Layer to the next open spot in the Network's structure. This function
@@ -77,11 +83,12 @@ impl Network {
         &mut self,
         neurons: usize,
         inputs: Option<usize>,
-        activation_fn: Box<dyn ActivationFn>
+        activation_fn: Box<dyn ActivationFn>,
+        dropout: Option<f32>
     ) {
         match inputs {
-            Some(inputs) => self.add_input_layer(neurons, inputs, activation_fn),
-            _ => self.add_hidden_layer(neurons, activation_fn)
+            Some(inputs) => self.add_input_layer(neurons, inputs, activation_fn, dropout),
+            _ => self.add_hidden_layer(neurons, activation_fn, dropout)
         }
     }
 
@@ -113,7 +120,7 @@ impl Network {
             samples.shuffle(&mut rng);
 
             for sample in samples {
-                let network_output: Array2<f64> = self.predict(&inputs[sample]);
+                let network_output: Array2<f64> = self.predict(&inputs[sample], Some(rng));
 
                 if !metric.call(&network_output, &outputs[sample]) {
                     early_stop = false;
@@ -152,7 +159,7 @@ impl Network {
 
         for (input, output) in inputs.iter().zip(outputs) {
             let error = {
-                let network_output = self.predict(input);
+                let network_output = self.predict(input, None);
                 self.cost.prime(&network_output, output)
             };
 
@@ -168,11 +175,11 @@ impl Network {
     /// # Arguments
     ///
     /// * `inputs` - Input vector
-    pub fn predict(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
+    pub fn predict(&mut self, inputs: &Array2<f64>, rng: Option<ThreadRng>) -> Array2<f64> {
         let mut output: Array2<f64> = inputs.to_owned();
 
         for layer in self.layers.iter_mut() {
-            output = layer.feed_forward(&output);
+            output = layer.feed_forward(&output, &rng);
         }
 
         output
