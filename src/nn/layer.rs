@@ -2,8 +2,8 @@ use super::activations::ActivationFn;
 use super::costs::Cost;
 
 use ndarray::{Array, Array2};
-// use ndarray_rand::rand_distr::Uniform;
-use rand::{distributions::{Distribution, Uniform}, prelude::ThreadRng};
+
+use rand::{distributions::{Uniform, Distribution}, prelude::ThreadRng};
 use ndarray_rand::RandomExt;
 
 use serde::ser::{Serialize, SerializeStruct, Serializer};
@@ -88,7 +88,7 @@ impl Layer {
 
         match self.dropout {
             Some(dropout ) => {
-                
+
                 self.dropped_neurons.clear();
                 self.map_output_with_dropout(output, dropout, rng)
             },
@@ -99,18 +99,20 @@ impl Layer {
     fn map_output_with_dropout(&mut self, output: Array2<f64>, dropout: f32, rng: &Option<ThreadRng>) -> Array2<f64> {
         match rng {
             Some(mut some_rng) => {
-                let range = Uniform::new(0.0, 1.0);
                 let mut index: usize = 0;
+                let range = Uniform::new(0.0, 1.0);
 
                 output.mapv(
                     |el| {
-                        let sample = range.sample(&mut some_rng);
-                        if sample < dropout {
-                            self.dropped_neurons.push(index);
-                            index += 1;
+                        let sample: f32 = range.sample(&mut some_rng);
 
+                        let value = if sample < dropout {
+                            self.dropped_neurons.push(index);
                             0.0
-                        } else { el }
+                        } else { el };
+
+                        index += 1;
+                        value
                     } 
                 )
             },
