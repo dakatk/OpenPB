@@ -83,7 +83,7 @@ fn main() -> Result<(), String> {
             println!("Finished after {} seconds\n", elapsed.as_secs_f32());
 
             for (input, output) in result.inputs.iter().zip(result.outputs) {
-                let prediction: Array2<f64> = network.predict(input, None);
+                let prediction: Array2<f64> = network.predict(input);
                 println!(
                     "{}: {} {}",
                     input.t().row(0),

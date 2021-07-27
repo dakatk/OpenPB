@@ -4,8 +4,7 @@ use super::layer::Layer;
 use super::metric::Metric;
 use super::optimizer::{Optimize, Optimizer};
 use ndarray::Array2;
-use rand::thread_rng;
-use rand::prelude::ThreadRng;
+use rand::prelude::*;
 use rand::seq::SliceRandom;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
@@ -124,14 +123,14 @@ impl Network {
             samples.shuffle(&mut rng);
 
             for sample in samples {
-                let network_output: Array2<f64> = self.predict(&inputs[sample], Some(rng));
-
-                if !metric.call(&network_output, &outputs[sample]) {
+                let network_prediction: Array2<f64> = self.predict(&inputs[sample]);
+                if !metric.call(&network_prediction, &outputs[sample]) {
                     early_stop = false;
                 }
 
-                let len: usize = self.layers.to_owned().len();
+                let network_output: Array2<f64> = self.feed_forward(&inputs[sample]);
                 let mut attached_layer: Option<Layer>;
+                let len: usize = self.layers.to_owned().len();
 
                 for i in (0..len).rev() {
                     {
@@ -162,16 +161,14 @@ impl Network {
         }
 
         let mut errors: Vec<Array2<f64>> = vec![];
-
         for (input, output) in inputs.iter().zip(outputs) {
             let error = {
-                let network_output = self.predict(input, None);
+                let network_output = self.predict(input);
                 self.cost.prime(&network_output, output)
             };
 
             errors.push(error);
         }
-
         errors
     }
 
@@ -181,13 +178,29 @@ impl Network {
     /// # Arguments
     ///
     /// * `inputs` - Input vector
-    pub fn predict(&mut self, inputs: &Array2<f64>, rng: Option<ThreadRng>) -> Array2<f64> {
+    fn feed_forward(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
         let mut output: Array2<f64> = inputs.to_owned();
 
         for layer in self.layers.iter_mut() {
-            output = layer.feed_forward(&output, &rng);
+            output = layer.feed_forward(&output);
         }
+        output
+    }
 
+    /// Computes the network's prediction for a given input.
+    /// It is assumed that this function is called after the 
+    /// network has already been trained, therefore Dropout
+    /// Regularization is not taken into account
+    ///
+    /// # Arguments
+    ///
+    /// * `inputs` - Input vector
+    pub fn predict(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
+        let mut output: Array2<f64> = inputs.to_owned();
+
+        for layer in self.layers.iter_mut() {
+            output = layer.feed_forward_no_dropout(&output);
+        }
         output
     }
 }

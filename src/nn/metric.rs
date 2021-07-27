@@ -1,4 +1,3 @@
-use approx::AbsDiffEq;
 use ndarray::Array2;
 use serde_json::Map;
 use serde_json::Value;

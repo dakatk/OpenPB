@@ -3,7 +3,7 @@ use super::cost::Cost;
 use ndarray::{Array, Array2};
 use ndarray_rand::RandomExt;
 use rand::distributions::{Distribution, Uniform};
-use rand::prelude::ThreadRng;
+use rand::prelude::*;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 /// Representation of a single Layer in the Network
@@ -82,7 +82,7 @@ impl Layer {
     /// # Arguments
     ///
     /// * `inputs` - Input vector to calculate activation values
-    pub fn feed_forward(&mut self, inputs: &Array2<f64>, rng: &Option<ThreadRng>) -> Array2<f64> {
+    pub fn feed_forward(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
 
         self.inputs.assign(inputs);
@@ -93,39 +93,39 @@ impl Layer {
         match self.dropout {
             Some(dropout) => {
                 self.dropped_neurons.clear();
-                self.map_output_with_dropout(output, dropout, rng)
+                self.map_output_with_dropout(output, dropout)
             }
             None => output
         }
     }
 
+    pub fn feed_forward_no_dropout(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
+        let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
+
+        self.inputs.assign(inputs);
+        self.activations.assign(&activations);
+        self.activation_fn.call(&activations)
+    }
+
     fn map_output_with_dropout(
         &mut self,
         output: Array2<f64>,
-        dropout: f32,
-        rng: &Option<ThreadRng>
+        dropout: f32
     ) -> Array2<f64> {
-        match rng {
-            Some(mut some_rng) => {
-                let mut index: usize = 0;
-                let range = Uniform::new(0.0, 1.0);
+        let range = Uniform::new(0.0, 1.0);
+        let mut rng = thread_rng();
+        let mut index: usize = 0;
 
-                output.mapv(|el| {
-                    let sample: f32 = range.sample(&mut some_rng);
+        output.mapv(|el| {
+            let sample: f32 = range.sample(&mut rng);
+            let value = if sample < dropout {
+                self.dropped_neurons.push(index);
+                0.0
+            } else { el };
 
-                    let value = if sample < dropout {
-                        self.dropped_neurons.push(index);
-                        0.0
-                    } else {
-                        el
-                    };
-
-                    index += 1;
-                    value
-                })
-            }
-            None => output
-        }
+            index += 1;
+            value
+        })
     }
 
     /// Backpropogation step where the deltas for each layer are calculated
