@@ -2,14 +2,14 @@
     "cost": "mse",
     "hidden_layers": [
         {
-            "neurons": 4,
+            "neurons": 6,
             "dropout": 0.2,
-            "activation": "relu"
+            "activation": "sigmoid"
         }
     ],
     "optimizer": {
-        "name": "adam",
-        "learning_rate": 0.002
+        "name": "sgd",
+        "learning_rate": 0.05
     },
     "metric": {
         "name": "accuracy",

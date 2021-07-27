@@ -1,7 +1,7 @@
 use super::activations::ActivationFn;
 use super::costs::Cost;
 use super::metrics::Metric;
-use super::optimizers::Optimizer;
+use super::optimizers::{Optimize, Optimizer};
 use super::layer::Layer;
 
 use ndarray::Array2;
@@ -17,7 +17,10 @@ pub struct Network {
     layers: Vec<Layer>,
 
     /// Loss function for error reporting/backprop
-    cost: Box<dyn Cost>
+    cost: Box<dyn Cost>,
+
+    /// Optimization function wrapper
+    optimize: Optimize
 }
 
 impl Network {
@@ -27,7 +30,8 @@ impl Network {
     pub fn new(cost: Box<dyn Cost>) -> Network {
         Network {
             layers: vec![],
-            cost
+            cost,
+            optimize: Optimize::new()
         }
     }
 
@@ -108,9 +112,10 @@ impl Network {
         &mut self,
         inputs: &[Array2<f64>],
         outputs: &[Array2<f64>],
-        mut optimizer: Box<dyn Optimizer>,
+        optimizer: &mut dyn Optimizer,
         metric: Box<dyn Metric>,
-        epochs: u64
+        epochs: u64,
+        batch_size: Option<usize>
     ) -> Vec<Array2<f64>> {
         let mut rng = thread_rng();
         for epoch in 1..=epochs {
@@ -146,7 +151,8 @@ impl Network {
                         self.cost.clone()
                     );
                 }
-                optimizer.update(&mut self.layers);
+                //optimizer.update(&mut self.layers, batch_size);
+                self.optimize.update(optimizer, &mut self.layers, batch_size)
             }
 
             if early_stop {

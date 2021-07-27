@@ -110,16 +110,34 @@ struct NetworkDe {
     metric: MetricDe,
 
     /// Number of trianing epochs
-    epochs: u64
+    epochs: u64,
+
+    /// Optional mini batch size for batch gradient descent 
+    batch_size: Option<usize>
 }
 
+/// Container for all deserialized data needed to train a network
 pub struct NetworkDataDe {
+    /// Netowkr object
     pub network: Network,
+
+    /// Training data inputs
     pub inputs: Vec<Array2<f64>>,
+
+    /// Training data outputs
     pub outputs: Vec<Array2<f64>>,
+
+    /// Network evaluation method
     pub metric: Box<dyn Metric>,
+
+    /// Gradient descent method
     pub optimizer: Box<dyn Optimizer>,
-    pub epochs: u64
+
+    /// Number of trianing epochs
+    pub epochs: u64,
+
+    /// Optional mini batch size for batch gradient descent 
+    pub batch_size: Option<usize>
 }
 
 impl NetworkDataDe {
@@ -184,7 +202,8 @@ impl NetworkDataDe {
             outputs: output_values.data,
             metric,
             optimizer,
-            epochs: network_values.epochs
+            epochs: network_values.epochs,
+            batch_size: network_values.batch_size
         })
     }
 }
@@ -215,12 +234,12 @@ fn metric_from_str(metric_data: MetricDe) -> Option<Box<dyn Metric>> {
 fn optimizer_from_str(optimizer_data: OptimizerDe) -> Option<Box<dyn Optimizer>> {
     let beta1 = match optimizer_data.beta1 {
         Some(beta1) => beta1,
-        None => optimizers::DEFAULT_BETA_1
+        None => optimizers::DEFAULT_GAMMA
     };
 
     let beta2 = match optimizer_data.beta1 {
         Some(beta2) => beta2,
-        None => optimizers::DEFAULT_BETA_2
+        None => optimizers::DEFAULT_BETA
     };
 
     match optimizer_data.name.to_lowercase().as_str() {
