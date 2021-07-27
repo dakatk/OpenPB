@@ -1,8 +1,11 @@
-use crate::nn::{activations::{ActivationFn, LeakyReLU, ReLU, Sigmoid}, optimizers};
 use crate::nn::costs::{Cost, MSE};
 use crate::nn::metrics::{Accuracy, Metric};
 use crate::nn::network::Network;
 use crate::nn::optimizers::{Adam, Optimizer, SGD};
+use crate::nn::{
+    activations::{ActivationFn, LeakyReLU, ReLU, Sigmoid},
+    optimizers
+};
 
 use ndarray::Array2;
 
@@ -81,7 +84,7 @@ struct OptimizerDe {
     beta1: Option<f64>,
 
     /// Optional secondary momentum constant
-    beta2: Option<f64>,
+    beta2: Option<f64>
 }
 
 /// Deserialized values representing the evaluation Metric in JSON
@@ -112,7 +115,7 @@ struct NetworkDe {
     /// Number of trianing epochs
     epochs: u64,
 
-    /// Optional mini batch size for batch gradient descent 
+    /// Optional mini batch size for batch gradient descent
     batch_size: Option<usize>
 }
 
@@ -136,7 +139,7 @@ pub struct NetworkDataDe {
     /// Number of trianing epochs
     pub epochs: u64,
 
-    /// Optional mini batch size for batch gradient descent 
+    /// Optional mini batch size for batch gradient descent
     pub batch_size: Option<usize>
 }
 
@@ -244,7 +247,11 @@ fn optimizer_from_str(optimizer_data: OptimizerDe) -> Option<Box<dyn Optimizer>>
 
     match optimizer_data.name.to_lowercase().as_str() {
         "sgd" => Some(Box::new(SGD::new(optimizer_data.learning_rate, beta1))),
-        "adam" => Some(Box::new(Adam::new(optimizer_data.learning_rate, beta1, beta2))),
+        "adam" => Some(Box::new(Adam::new(
+            optimizer_data.learning_rate,
+            beta1,
+            beta2
+        ))),
         _ => None
     }
 }

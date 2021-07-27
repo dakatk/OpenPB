@@ -1,13 +1,13 @@
 use super::activations::ActivationFn;
 use super::costs::Cost;
+use super::layer::Layer;
 use super::metrics::Metric;
 use super::optimizers::{Optimize, Optimizer};
-use super::layer::Layer;
 
 use ndarray::Array2;
 
-use rand::{prelude::ThreadRng, seq::SliceRandom};
 use rand::thread_rng;
+use rand::{prelude::ThreadRng, seq::SliceRandom};
 
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
@@ -51,7 +51,8 @@ impl Network {
         activation_fn: Box<dyn ActivationFn>,
         dropout: Option<f32>
     ) {
-        self.layers.push(Layer::new(neurons, inputs, activation_fn, dropout));
+        self.layers
+            .push(Layer::new(neurons, inputs, activation_fn, dropout));
     }
 
     /// Same as `add_input_layer`, but used for any other layer after. The number of
@@ -63,9 +64,9 @@ impl Network {
     /// are present in the new Layer
     /// * `activation_fn` - Function that determines the activation of individual neurons
     fn add_hidden_layer(
-        &mut self, 
-        neurons: usize, 
-        activation_fn: Box<dyn ActivationFn>, 
+        &mut self,
+        neurons: usize,
+        activation_fn: Box<dyn ActivationFn>,
         dropout: Option<f32>
     ) {
         let prev_neurons = self.layers.last_mut().unwrap().neurons;
@@ -130,7 +131,7 @@ impl Network {
                 if !metric.call(&network_output, &outputs[sample]) {
                     early_stop = false;
                 }
-                
+
                 let len: usize = self.layers.to_owned().len();
                 let mut attached_layer: Option<Layer>;
 
@@ -152,7 +153,8 @@ impl Network {
                     );
                 }
                 //optimizer.update(&mut self.layers, batch_size);
-                self.optimize.update(optimizer, &mut self.layers, batch_size)
+                self.optimize
+                    .update(optimizer, &mut self.layers, batch_size)
             }
 
             if early_stop {

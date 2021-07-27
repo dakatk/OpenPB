@@ -30,8 +30,7 @@ impl Accuracy {
     /// between two values
     #[allow(dead_code)]
     pub fn new(params: &Map<String, Value>) -> Accuracy {
-        let epsilon: f64 = params["epsilon"].as_f64().unwrap();
-
+        let epsilon: f64 = params["epsilon"].as_f64().unwrap_or_default();
         Accuracy { epsilon }
     }
 }
