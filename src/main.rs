@@ -3,20 +3,17 @@
 mod nn;
 mod parse_json;
 
+use clap::{App, Arg, ArgMatches};
 use ndarray::Array2;
 use nn::network::Network;
-
 use parse_json::NetworkDataDe;
-
-use clap::{App, Arg, ArgMatches};
-
 use std::fs;
 use std::io;
 use std::io::Write;
 use std::time::{Duration, SystemTime};
 
 #[doc(hidden)]
-fn main () -> Result<(), String> {
+fn main() -> Result<(), String> {
     let args: ArgMatches = App::new("Open Neural Network Benchmarker (ONNB)")
         .version("0.1")
         .author("Dusten Knull <dakatk97@gmail.com>")
@@ -66,18 +63,20 @@ fn main () -> Result<(), String> {
     };
 
     match NetworkDataDe::from_json(&data_contents, &network_contents) {
-        Ok(result) => {
+        Ok(mut result) => {
             let now = SystemTime::now();
             let mut network = result.network;
 
             println!("Network successfully created\nStarting training cycle...\n");
+            let optimizer = result.optimizer.as_mut();
 
             network.fit(
                 &result.inputs,
                 &result.outputs,
-                result.optimizer,
+                optimizer,
                 result.metric,
-                result.epochs
+                result.epochs,
+                result.batch_size
             );
 
             let elapsed: Duration = now.elapsed().unwrap();
@@ -85,7 +84,12 @@ fn main () -> Result<(), String> {
 
             for (input, output) in result.inputs.iter().zip(result.outputs) {
                 let prediction: Array2<f64> = network.predict(input, None);
-                println!("{}: {} {}", input.t().row(0), prediction.t().row(0), output.t().row(0));
+                println!(
+                    "{}: {} {}",
+                    input.t().row(0),
+                    prediction.t().row(0),
+                    output.t().row(0)
+                );
             }
 
             choose_to_save(&args, &network)

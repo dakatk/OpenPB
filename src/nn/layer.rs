@@ -1,14 +1,13 @@
-use super::activations::ActivationFn;
-use super::costs::Cost;
-
+use super::activation::ActivationFn;
+use super::cost::Cost;
 use ndarray::{Array, Array2};
-
-use rand::{distributions::{Uniform, Distribution}, prelude::ThreadRng};
 use ndarray_rand::RandomExt;
-
+use rand::distributions::{Distribution, Uniform};
+use rand::prelude::ThreadRng;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 /// Representation of a single Layer in the Network
+#[derive(Clone)]
 pub struct Layer {
     /// Delta values computed using the first derivative of
     /// the Layer's activation function during backprop. Used
@@ -37,7 +36,7 @@ pub struct Layer {
     /// Dropout regularization chance
     dropout: Option<f32>,
 
-    /// Row indices of neurons that have been dropped out 
+    /// Row indices of neurons that have been dropped out
     /// temporarily during training
     dropped_neurons: Vec<usize>
 }
@@ -48,7 +47,12 @@ impl Layer {
     /// * `neurons` - Number of neurons, determines how many weights/biases are present
     /// * `inputs` - Size of expected input vector
     /// * `activation_fn` - Function that determines the activation of individual neurons
-    pub fn new(neurons: usize, inputs: usize, activation_fn: Box<dyn ActivationFn>, dropout: Option<f32>) -> Layer {
+    pub fn new(
+        neurons: usize,
+        inputs: usize,
+        activation_fn: Box<dyn ActivationFn>,
+        dropout: Option<f32>
+    ) -> Layer {
         let weights: Array2<f64> = Array2::random((neurons, inputs), Uniform::new(0., 1.));
         let weights: Array2<f64> = weights / f64::sqrt(inputs as f64);
 
@@ -87,49 +91,53 @@ impl Layer {
         let output: Array2<f64> = self.activation_fn.call(&activations);
 
         match self.dropout {
-            Some(dropout ) => {
-
+            Some(dropout) => {
                 self.dropped_neurons.clear();
                 self.map_output_with_dropout(output, dropout, rng)
-            },
+            }
             None => output
         }
     }
 
-    fn map_output_with_dropout(&mut self, output: Array2<f64>, dropout: f32, rng: &Option<ThreadRng>) -> Array2<f64> {
+    fn map_output_with_dropout(
+        &mut self,
+        output: Array2<f64>,
+        dropout: f32,
+        rng: &Option<ThreadRng>
+    ) -> Array2<f64> {
         match rng {
             Some(mut some_rng) => {
                 let mut index: usize = 0;
                 let range = Uniform::new(0.0, 1.0);
 
-                output.mapv(
-                    |el| {
-                        let sample: f32 = range.sample(&mut some_rng);
+                output.mapv(|el| {
+                    let sample: f32 = range.sample(&mut some_rng);
 
-                        let value = if sample < dropout {
-                            self.dropped_neurons.push(index);
-                            0.0
-                        } else { el };
+                    let value = if sample < dropout {
+                        self.dropped_neurons.push(index);
+                        0.0
+                    } else {
+                        el
+                    };
 
-                        index += 1;
-                        value
-                    } 
-                )
-            },
+                    index += 1;
+                    value
+                })
+            }
             None => output
         }
     }
 
     /// Backpropogation step where the deltas for each layer are calculated
     /// (do this step before gradient descent)
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `actual` - The predicted output produced by the network
     /// * `target` - The expected output value
     /// * `attached_layer` - The next layer in the network. Should be
     /// 'None' if 'self' is the layer that produces the final output
-    /// * `cost` - The cost or loss function associated with the 
+    /// * `cost` - The cost or loss function associated with the
     /// training setup
     pub fn back_prop(
         &mut self,
@@ -154,7 +162,7 @@ impl Layer {
                 for dropped_neuron in self.dropped_neurons.iter() {
                     self.delta.row_mut(*dropped_neuron).assign(&zeros);
                 }
-            },
+            }
             None => ()
         }
     }
@@ -162,7 +170,7 @@ impl Layer {
     /// Adjusts the weights and biases based on deltas calculated during gradient descent
     ///
     /// # Arguments
-    /// 
+    ///
     /// * `delta_weights` - Change in the weight values
     /// * `delta_biases` - Change in the bias values
     pub fn update(&mut self, delta_weights: &Array2<f64>, delta_biases: &Array2<f64>) {
@@ -174,31 +182,15 @@ impl Layer {
     }
 }
 
-impl Clone for Layer {
-    fn clone(&self) -> Layer {
-        Layer {
-            weights: self.weights.to_owned(),
-            biases: self.biases.to_owned(),
-            inputs: self.inputs.to_owned(),
-            activations: self.activations.to_owned(),
-            delta: self.delta.to_owned(),
-            neurons: self.neurons,
-            activation_fn: self.activation_fn.clone(),
-            dropout: self.dropout.clone(),
-            dropped_neurons: self.dropped_neurons.clone()
-        }
-    }
-}
-
 impl Serialize for Layer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer
     {
         let mut s = serializer.serialize_struct("Layer", 2)?;
+
         s.serialize_field("weights", &self.weights)?;
         s.serialize_field("biases", &self.biases)?;
-
         s.end()
     }
 }

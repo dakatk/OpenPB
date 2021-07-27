@@ -1,14 +1,12 @@
-use super::activations::ActivationFn;
-use super::costs::Cost;
-use super::metrics::Metric;
-use super::optimizers::Optimizer;
+use super::activation::ActivationFn;
+use super::cost::Cost;
 use super::layer::Layer;
-
+use super::metric::Metric;
+use super::optimizer::{Optimize, Optimizer};
 use ndarray::Array2;
-
-use rand::{prelude::ThreadRng, seq::SliceRandom};
 use rand::thread_rng;
-
+use rand::prelude::ThreadRng;
+use rand::seq::SliceRandom;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 pub struct Network {
@@ -17,7 +15,10 @@ pub struct Network {
     layers: Vec<Layer>,
 
     /// Loss function for error reporting/backprop
-    cost: Box<dyn Cost>
+    cost: Box<dyn Cost>,
+
+    /// Optimization function wrapper
+    optimize: Optimize
 }
 
 impl Network {
@@ -27,7 +28,8 @@ impl Network {
     pub fn new(cost: Box<dyn Cost>) -> Network {
         Network {
             layers: vec![],
-            cost
+            cost,
+            optimize: Optimize::new()
         }
     }
 
@@ -47,7 +49,8 @@ impl Network {
         activation_fn: Box<dyn ActivationFn>,
         dropout: Option<f32>
     ) {
-        self.layers.push(Layer::new(neurons, inputs, activation_fn, dropout));
+        self.layers
+            .push(Layer::new(neurons, inputs, activation_fn, dropout));
     }
 
     /// Same as `add_input_layer`, but used for any other layer after. The number of
@@ -59,9 +62,9 @@ impl Network {
     /// are present in the new Layer
     /// * `activation_fn` - Function that determines the activation of individual neurons
     fn add_hidden_layer(
-        &mut self, 
-        neurons: usize, 
-        activation_fn: Box<dyn ActivationFn>, 
+        &mut self,
+        neurons: usize,
+        activation_fn: Box<dyn ActivationFn>,
         dropout: Option<f32>
     ) {
         let prev_neurons = self.layers.last_mut().unwrap().neurons;
@@ -108,9 +111,10 @@ impl Network {
         &mut self,
         inputs: &[Array2<f64>],
         outputs: &[Array2<f64>],
-        mut optimizer: Box<dyn Optimizer>,
+        optimizer: &mut dyn Optimizer,
         metric: Box<dyn Metric>,
-        epochs: u64
+        epochs: u64,
+        batch_size: Option<usize>
     ) -> Vec<Array2<f64>> {
         let mut rng = thread_rng();
         for epoch in 1..=epochs {
@@ -125,7 +129,7 @@ impl Network {
                 if !metric.call(&network_output, &outputs[sample]) {
                     early_stop = false;
                 }
-                
+
                 let len: usize = self.layers.to_owned().len();
                 let mut attached_layer: Option<Layer>;
 
@@ -146,7 +150,9 @@ impl Network {
                         self.cost.clone()
                     );
                 }
-                optimizer.update(&mut self.layers);
+                //optimizer.update(&mut self.layers, batch_size);
+                self.optimize
+                    .update(optimizer, &mut self.layers, batch_size)
             }
 
             if early_stop {

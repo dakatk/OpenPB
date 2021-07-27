@@ -1,14 +1,12 @@
-use crate::nn::{activations::{ActivationFn, LeakyReLU, ReLU, Sigmoid}, optimizers};
-use crate::nn::costs::{Cost, MSE};
-use crate::nn::metrics::{Accuracy, Metric};
+use crate::nn::cost::{Cost, MSE};
+use crate::nn::metric::{Accuracy, Metric};
 use crate::nn::network::Network;
-use crate::nn::optimizers::{Adam, Optimizer, SGD};
-
+use crate::nn::optimizer::{Adam, Optimizer, SGD};
+use crate::nn::activation::{ActivationFn, LeakyReLU, ReLU, Sigmoid};
+use crate::nn::optimizer;
 use ndarray::Array2;
-
 use serde::Deserialize;
 use serde_json::{Map, Value};
-
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -16,12 +14,6 @@ use std::path::Path;
 /// Deserialized values representing the input data in JSON
 #[derive(Deserialize, Debug)]
 struct InputDe {
-    /// Number of neurons
-    neurons: usize,
-
-    /// Name of activation function
-    activation: String,
-
     /// Size of each input vector
     size: usize,
 
@@ -35,9 +27,6 @@ struct InputDe {
 /// Deserialized values representing the output data in JSON
 #[derive(Deserialize, Debug)]
 struct OutputDe {
-    /// Name of activation function
-    activation: String,
-
     /// Size of each output vector
     size: usize,
 
@@ -81,7 +70,7 @@ struct OptimizerDe {
     beta1: Option<f64>,
 
     /// Optional secondary momentum constant
-    beta2: Option<f64>,
+    beta2: Option<f64>
 }
 
 /// Deserialized values representing the evaluation Metric in JSON
@@ -101,7 +90,7 @@ struct NetworkDe {
     cost: String,
 
     /// Hidden layer values
-    hidden_layers: Vec<LayerDe>,
+    layers: Vec<LayerDe>,
 
     /// Optimizer values
     optimizer: OptimizerDe,
@@ -110,16 +99,34 @@ struct NetworkDe {
     metric: MetricDe,
 
     /// Number of trianing epochs
-    epochs: u64
+    epochs: u64,
+
+    /// Optional mini batch size for batch gradient descent
+    batch_size: Option<usize>
 }
 
+/// Container for all deserialized data needed to train a network
 pub struct NetworkDataDe {
+    /// Netowkr object
     pub network: Network,
+
+    /// Training data inputs
     pub inputs: Vec<Array2<f64>>,
+
+    /// Training data outputs
     pub outputs: Vec<Array2<f64>>,
+
+    /// Network evaluation method
     pub metric: Box<dyn Metric>,
+
+    /// Gradient descent method
     pub optimizer: Box<dyn Optimizer>,
-    pub epochs: u64
+
+    /// Number of trianing epochs
+    pub epochs: u64,
+
+    /// Optional mini batch size for batch gradient descent
+    pub batch_size: Option<usize>
 }
 
 impl NetworkDataDe {
@@ -139,34 +146,19 @@ impl NetworkDataDe {
         };
 
         let mut network = Network::new(cost);
+        let mut inputs: Option<usize> = Some(input_values.size);
 
-        let input_activation = match activation_from_str(input_values.activation.to_lowercase()) {
-            Some(value) => value,
-            None => return Err("Invalid activation function name")
-        };
-
-        network.add_layer(
-            input_values.neurons,
-            Some(input_values.size),
-            input_activation,
-            input_values.dropout
-        );
-
-        for layer in network_values.hidden_layers.iter() {
-            let layer_activation = match activation_from_str(layer.activation.to_lowercase()) {
+        for layer in network_values.layers.iter() {
+            let activation_fn: Box<dyn ActivationFn> = match activation_from_str(layer.activation.to_lowercase()) {
                 Some(value) => value,
                 None => return Err("Invalid activation function name")
             };
 
-            network.add_layer(layer.neurons, None, layer_activation, layer.dropout);
+            network.add_layer(layer.neurons, inputs, activation_fn, layer.dropout);
+            if inputs.is_some() {
+                inputs = None
+            }
         }
-
-        let output_activation = match activation_from_str(output_values.activation.to_lowercase()) {
-            Some(value) => value,
-            None => return Err("Invalid activation function name")
-        };
-
-        network.add_layer(output_values.size, None, output_activation, None);
 
         let metric = match metric_from_str(network_values.metric) {
             Some(value) => value,
@@ -184,7 +176,8 @@ impl NetworkDataDe {
             outputs: output_values.data,
             metric,
             optimizer,
-            epochs: network_values.epochs
+            epochs: network_values.epochs,
+            batch_size: network_values.batch_size
         })
     }
 }
@@ -215,17 +208,21 @@ fn metric_from_str(metric_data: MetricDe) -> Option<Box<dyn Metric>> {
 fn optimizer_from_str(optimizer_data: OptimizerDe) -> Option<Box<dyn Optimizer>> {
     let beta1 = match optimizer_data.beta1 {
         Some(beta1) => beta1,
-        None => optimizers::DEFAULT_BETA_1
+        None => optimizer::DEFAULT_GAMMA
     };
 
     let beta2 = match optimizer_data.beta1 {
         Some(beta2) => beta2,
-        None => optimizers::DEFAULT_BETA_2
+        None => optimizer::DEFAULT_BETA
     };
 
     match optimizer_data.name.to_lowercase().as_str() {
         "sgd" => Some(Box::new(SGD::new(optimizer_data.learning_rate, beta1))),
-        "adam" => Some(Box::new(Adam::new(optimizer_data.learning_rate, beta1, beta2))),
+        "adam" => Some(Box::new(Adam::new(
+            optimizer_data.learning_rate,
+            beta1,
+            beta2
+        ))),
         _ => None
     }
 }

@@ -1,15 +1,23 @@
 {
     "cost": "mse",
-    "hidden_layers": [
+    "layers": [
         {
             "neurons": 4,
-            "dropout": 0.2,
             "activation": "relu"
+        },
+        {
+            "neurons": 6,
+            "dropout": 0.2,
+            "activation": "sigmoid"
+        },
+        {
+            "neurons": 4,
+            "activation": "leakyrelu"
         }
     ],
     "optimizer": {
-        "name": "adam",
-        "learning_rate": 0.002
+        "name": "sgd",
+        "learning_rate": 0.05
     },
     "metric": {
         "name": "accuracy",
@@ -17,5 +25,6 @@
             "epsilon": 0.2
         }
     },
-    "epochs": 10000
+    "epochs": 10000,
+    "batch_size": 2
 }
