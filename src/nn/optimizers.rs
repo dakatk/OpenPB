@@ -1,6 +1,14 @@
 use super::layer::Layer;
 use ndarray::Array2;
 
+/// Wrapper for updating a network with any given 
+/// optimization function using either batch or
+/// online training
+/// 
+/// * `batch_deltas` - Accumulated deltas for each layer 
+/// during batch training
+/// * `curr_batch` - Counter that keeps track of how many 
+/// batches have been accumulated
 pub struct Optimize {
     batch_deltas: Vec<Array2<f64>>,
     curr_batch: usize
@@ -14,6 +22,14 @@ impl Optimize {
         }
     }
 
+    /// Runs the 'update' function of the given Optimizer through
+    /// using either batch or online training methods
+    /// 
+    /// * `optimizer` - Optimization function (e.g. SGD)
+    /// * `layers` - Layers from the network that is being trained
+    /// * `batch_size` - If Some(), then batch updates are
+    /// applied with the given batch size. If None, then online
+    /// updates are used instead
     pub fn update(
         &mut self,
         optimizer: &mut dyn Optimizer,
@@ -26,6 +42,7 @@ impl Optimize {
         }
     }
 
+    /// Batch training
     fn update_batch(
         &mut self,
         optimizer: &mut dyn Optimizer,
@@ -56,6 +73,7 @@ impl Optimize {
         }
     }
 
+    /// Online training
     fn update_online(&mut self, optimizer: &mut dyn Optimizer, layers: &mut Vec<Layer>) {
         let deltas: Vec<Array2<f64>> = layers.iter().map(|l| l.delta.clone()).collect();
         optimizer.update(layers, &deltas);
@@ -76,7 +94,7 @@ pub trait Optimizer {
     ///
     /// # Arguments
     ///
-    /// * `layers` - layers of the network to apply gradient descent to
+    /// * `layers` - Layers of the network to apply gradient descent to
     fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>);
 }
 
