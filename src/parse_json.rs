@@ -1,10 +1,10 @@
-use crate::nn::costs::{Cost, MSE};
-use crate::nn::metrics::{Accuracy, Metric};
+use crate::nn::cost::{Cost, MSE};
+use crate::nn::metric::{Accuracy, Metric};
 use crate::nn::network::Network;
-use crate::nn::optimizers::{Adam, Optimizer, SGD};
+use crate::nn::optimizer::{Adam, Optimizer, SGD};
 use crate::nn::{
-    activations::{ActivationFn, LeakyReLU, ReLU, Sigmoid},
-    optimizers
+    activation::{ActivationFn, LeakyReLU, ReLU, Sigmoid},
+    optimizer
 };
 
 use ndarray::Array2;
@@ -237,12 +237,12 @@ fn metric_from_str(metric_data: MetricDe) -> Option<Box<dyn Metric>> {
 fn optimizer_from_str(optimizer_data: OptimizerDe) -> Option<Box<dyn Optimizer>> {
     let beta1 = match optimizer_data.beta1 {
         Some(beta1) => beta1,
-        None => optimizers::DEFAULT_GAMMA
+        None => optimizer::DEFAULT_GAMMA
     };
 
     let beta2 = match optimizer_data.beta1 {
         Some(beta2) => beta2,
-        None => optimizers::DEFAULT_BETA
+        None => optimizer::DEFAULT_BETA
     };
 
     match optimizer_data.name.to_lowercase().as_str() {

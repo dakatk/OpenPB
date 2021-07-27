@@ -1,5 +1,5 @@
-use super::activations::ActivationFn;
-use super::costs::Cost;
+use super::activation::ActivationFn;
+use super::cost::Cost;
 
 use ndarray::{Array, Array2};
 

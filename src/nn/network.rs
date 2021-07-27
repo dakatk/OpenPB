@@ -1,8 +1,8 @@
-use super::activations::ActivationFn;
-use super::costs::Cost;
+use super::activation::ActivationFn;
+use super::cost::Cost;
 use super::layer::Layer;
-use super::metrics::Metric;
-use super::optimizers::{Optimize, Optimizer};
+use super::metric::Metric;
+use super::optimizer::{Optimize, Optimizer};
 
 use ndarray::Array2;
 
