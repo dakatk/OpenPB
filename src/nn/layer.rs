@@ -1,17 +1,13 @@
 use super::activation::ActivationFn;
 use super::cost::Cost;
-
 use ndarray::{Array, Array2};
-
 use ndarray_rand::RandomExt;
-use rand::{
-    distributions::{Distribution, Uniform},
-    prelude::ThreadRng
-};
-
+use rand::distributions::{Distribution, Uniform};
+use rand::prelude::ThreadRng;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 /// Representation of a single Layer in the Network
+#[derive(Clone)]
 pub struct Layer {
     /// Delta values computed using the first derivative of
     /// the Layer's activation function during backprop. Used
@@ -186,31 +182,15 @@ impl Layer {
     }
 }
 
-impl Clone for Layer {
-    fn clone(&self) -> Layer {
-        Layer {
-            weights: self.weights.to_owned(),
-            biases: self.biases.to_owned(),
-            inputs: self.inputs.to_owned(),
-            activations: self.activations.to_owned(),
-            delta: self.delta.to_owned(),
-            neurons: self.neurons,
-            activation_fn: self.activation_fn.clone(),
-            dropout: self.dropout.clone(),
-            dropped_neurons: self.dropped_neurons.clone()
-        }
-    }
-}
-
 impl Serialize for Layer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer
     {
         let mut s = serializer.serialize_struct("Layer", 2)?;
+
         s.serialize_field("weights", &self.weights)?;
         s.serialize_field("biases", &self.biases)?;
-
         s.end()
     }
 }

@@ -1,6 +1,5 @@
 use approx::AbsDiffEq;
 use ndarray::Array2;
-
 use serde_json::Map;
 use serde_json::Value;
 
@@ -28,7 +27,6 @@ impl Accuracy {
     ///
     /// * `epsilon` - The delta for used to check accuracy
     /// between two values
-    #[allow(dead_code)]
     pub fn new(params: &Map<String, Value>) -> Accuracy {
         let epsilon: f64 = params["epsilon"].as_f64().unwrap_or_default();
         Accuracy { epsilon }

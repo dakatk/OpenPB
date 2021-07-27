@@ -224,7 +224,6 @@ impl Optimizer for Adam {
             };
 
             let moment_adj: Array2<f64> = (moment_bar * self.learning_rate) / velocity_sqrt;
-
             layer.update(&moment_adj, &delta_biases)
         }
     }

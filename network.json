@@ -1,10 +1,18 @@
 {
     "cost": "mse",
-    "hidden_layers": [
+    "layers": [
+        {
+            "neurons": 4,
+            "activation": "relu"
+        },
         {
             "neurons": 6,
             "dropout": 0.2,
             "activation": "sigmoid"
+        },
+        {
+            "neurons": 4,
+            "activation": "leakyrelu"
         }
     ],
     "optimizer": {

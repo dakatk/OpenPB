@@ -3,12 +3,10 @@ use super::cost::Cost;
 use super::layer::Layer;
 use super::metric::Metric;
 use super::optimizer::{Optimize, Optimizer};
-
 use ndarray::Array2;
-
 use rand::thread_rng;
-use rand::{prelude::ThreadRng, seq::SliceRandom};
-
+use rand::prelude::ThreadRng;
+use rand::seq::SliceRandom;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 pub struct Network {

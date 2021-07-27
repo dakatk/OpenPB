@@ -2,16 +2,11 @@ use crate::nn::cost::{Cost, MSE};
 use crate::nn::metric::{Accuracy, Metric};
 use crate::nn::network::Network;
 use crate::nn::optimizer::{Adam, Optimizer, SGD};
-use crate::nn::{
-    activation::{ActivationFn, LeakyReLU, ReLU, Sigmoid},
-    optimizer
-};
-
+use crate::nn::activation::{ActivationFn, LeakyReLU, ReLU, Sigmoid};
+use crate::nn::optimizer;
 use ndarray::Array2;
-
 use serde::Deserialize;
 use serde_json::{Map, Value};
-
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -19,12 +14,6 @@ use std::path::Path;
 /// Deserialized values representing the input data in JSON
 #[derive(Deserialize, Debug)]
 struct InputDe {
-    /// Number of neurons
-    neurons: usize,
-
-    /// Name of activation function
-    activation: String,
-
     /// Size of each input vector
     size: usize,
 
@@ -38,9 +27,6 @@ struct InputDe {
 /// Deserialized values representing the output data in JSON
 #[derive(Deserialize, Debug)]
 struct OutputDe {
-    /// Name of activation function
-    activation: String,
-
     /// Size of each output vector
     size: usize,
 
@@ -104,7 +90,7 @@ struct NetworkDe {
     cost: String,
 
     /// Hidden layer values
-    hidden_layers: Vec<LayerDe>,
+    layers: Vec<LayerDe>,
 
     /// Optimizer values
     optimizer: OptimizerDe,
@@ -160,34 +146,19 @@ impl NetworkDataDe {
         };
 
         let mut network = Network::new(cost);
+        let mut inputs: Option<usize> = Some(input_values.size);
 
-        let input_activation = match activation_from_str(input_values.activation.to_lowercase()) {
-            Some(value) => value,
-            None => return Err("Invalid activation function name")
-        };
-
-        network.add_layer(
-            input_values.neurons,
-            Some(input_values.size),
-            input_activation,
-            input_values.dropout
-        );
-
-        for layer in network_values.hidden_layers.iter() {
-            let layer_activation = match activation_from_str(layer.activation.to_lowercase()) {
+        for layer in network_values.layers.iter() {
+            let activation_fn: Box<dyn ActivationFn> = match activation_from_str(layer.activation.to_lowercase()) {
                 Some(value) => value,
                 None => return Err("Invalid activation function name")
             };
 
-            network.add_layer(layer.neurons, None, layer_activation, layer.dropout);
+            network.add_layer(layer.neurons, inputs, activation_fn, layer.dropout);
+            if inputs.is_some() {
+                inputs = None
+            }
         }
-
-        let output_activation = match activation_from_str(output_values.activation.to_lowercase()) {
-            Some(value) => value,
-            None => return Err("Invalid activation function name")
-        };
-
-        network.add_layer(output_values.size, None, output_activation, None);
 
         let metric = match metric_from_str(network_values.metric) {
             Some(value) => value,
