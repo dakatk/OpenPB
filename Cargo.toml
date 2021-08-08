@@ -1,5 +1,5 @@
 [package]
-name = "onnb"
+name = "nn"
 version = "1.0.0"
 authors = ["dakatk <dakatk97@gmail.com>"]
 edition = "2018"

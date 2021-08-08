@@ -11,24 +11,16 @@ use serde::ser::{Serialize, SerializeStruct, Serializer};
 pub struct Network {
     /// Input, hidden, and output layers. Each layer is considered
     /// to be 'connected' to the next one in the list
-    layers: Vec<Layer>,
-
-    /// Loss function for error reporting/backprop
-    cost: Box<dyn Cost>,
-
-    /// Optimization function wrapper
-    optimize: Optimize
+    layers: Vec<Layer>
 }
 
 impl Network {
     /// # Arguments:
     ///
     /// * `cost` - Loss function for error reporting/backprop
-    pub fn new(cost: Box<dyn Cost>) -> Network {
+    pub fn new() -> Network {
         Network {
-            layers: vec![],
-            cost,
-            optimize: Optimize::new()
+            layers: vec![]
         }
     }
 
@@ -67,7 +59,6 @@ impl Network {
         dropout: Option<f32>
     ) {
         let prev_neurons = self.layers.last_mut().unwrap().neurons;
-
         self.layers
             .push(Layer::new(neurons, prev_neurons, activation_fn, dropout));
     }
@@ -111,17 +102,18 @@ impl Network {
         inputs: &[Array2<f64>],
         outputs: &[Array2<f64>],
         optimizer: &mut dyn Optimizer,
-        metric: Box<dyn Metric>,
+        metric: &dyn Metric,
+        cost: &dyn Cost,
         epochs: u64,
         batch_size: Option<usize>
     ) -> Vec<Array2<f64>> {
+        let mut optimize = Optimize::new();
         let mut rng = thread_rng();
         for epoch in 1..=epochs {
             let mut early_stop = true;
             let mut samples: Vec<usize> = (0..inputs.len()).collect();
 
             samples.shuffle(&mut rng);
-
             for sample in samples {
                 let network_prediction: Array2<f64> = self.predict(&inputs[sample]);
                 if !metric.call(&network_prediction, &outputs[sample]) {
@@ -129,29 +121,10 @@ impl Network {
                 }
 
                 let network_output: Array2<f64> = self.feed_forward(&inputs[sample]);
-                let mut attached_layer: Option<Layer>;
-                let len: usize = self.layers.to_owned().len();
+                let delta = cost.prime(&network_output,&outputs[sample]);
 
-                for i in (0..len).rev() {
-                    {
-                        attached_layer = if i < len - 1 {
-                            let layer = self.layers[i + 1].clone();
-                            Some(layer)
-                        } else {
-                            None
-                        };
-                    }
-
-                    self.layers[i].back_prop(
-                        &network_output,
-                        &outputs[sample],
-                        attached_layer,
-                        self.cost.clone()
-                    );
-                }
-                //optimizer.update(&mut self.layers, batch_size);
-                self.optimize
-                    .update(optimizer, &mut self.layers, batch_size)
+                self.back_prop(&delta);
+                optimize.update(optimizer, &mut self.layers, batch_size);
             }
 
             if early_stop {
@@ -164,9 +137,8 @@ impl Network {
         for (input, output) in inputs.iter().zip(outputs) {
             let error = {
                 let network_output = self.predict(input);
-                self.cost.prime(&network_output, output)
+                cost.prime(&network_output, output)
             };
-
             errors.push(error);
         }
         errors
@@ -178,13 +150,26 @@ impl Network {
     /// # Arguments
     ///
     /// * `inputs` - Input vector
-    fn feed_forward(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
+    pub fn feed_forward(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
         let mut output: Array2<f64> = inputs.to_owned();
-
         for layer in self.layers.iter_mut() {
             output = layer.feed_forward(&output);
         }
         output
+    }
+
+    /// # Arguments
+    /// 
+    /// * `deltas` - 
+    pub fn back_prop(&mut self, delta: &Array2<f64>) {
+        let mut attached_layer: Option<&Layer> = None;
+        for layer in self.layers.iter_mut().rev() {
+            match attached_layer {
+                Some(attached_layer) => layer.back_prop(attached_layer),
+                None => layer.back_prop_with_delta(delta)
+            };
+            attached_layer = Some(layer);
+        }
     }
 
     /// Computes the network's prediction for a given input.
@@ -197,7 +182,6 @@ impl Network {
     /// * `inputs` - Input vector
     pub fn predict(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
         let mut output: Array2<f64> = inputs.to_owned();
-
         for layer in self.layers.iter_mut() {
             output = layer.feed_forward_no_dropout(&output);
         }
@@ -212,7 +196,6 @@ impl Serialize for Network {
     {
         let mut s = serializer.serialize_struct("Network", 1)?;
         s.serialize_field("layers", &self.layers)?;
-
         s.end()
     }
 }

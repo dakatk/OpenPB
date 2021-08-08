@@ -119,6 +119,9 @@ pub struct NetworkDataDe {
     /// Network evaluation method
     pub metric: Box<dyn Metric>,
 
+    /// Network cost function
+    pub cost: Box<dyn Cost>,
+
     /// Gradient descent method
     pub optimizer: Box<dyn Optimizer>,
 
@@ -140,12 +143,7 @@ impl NetworkDataDe {
         let input_values: InputDe = data_values.inputs;
         let output_values: OutputDe = data_values.outputs;
 
-        let cost: Box<dyn Cost> = match cost_from_str(network_values.cost.to_lowercase()) {
-            Some(value) => value,
-            None => return Err("Invalid cost function name")
-        };
-
-        let mut network = Network::new(cost);
+        let mut network = Network::new();
         let mut inputs: Option<usize> = Some(input_values.size);
 
         for layer in network_values.layers.iter() {
@@ -160,9 +158,14 @@ impl NetworkDataDe {
             }
         }
 
-        let metric = match metric_from_str(network_values.metric) {
+        let metric: Box<dyn Metric> = match metric_from_str(network_values.metric) {
             Some(value) => value,
             None => return Err("Invalid metric name")
+        };
+
+        let cost: Box<dyn Cost> = match cost_from_str(network_values.cost.to_lowercase()) {
+            Some(value) => value,
+            None => return Err("Invalid cost function name")
         };
 
         let optimizer = match optimizer_from_str(network_values.optimizer) {
@@ -175,6 +178,7 @@ impl NetworkDataDe {
             inputs: input_values.data,
             outputs: output_values.data,
             metric,
+            cost,
             optimizer,
             epochs: network_values.epochs,
             batch_size: network_values.batch_size

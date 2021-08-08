@@ -12,6 +12,8 @@ use std::io;
 use std::io::Write;
 use std::time::{Duration, SystemTime};
 
+use crate::nn::optimizer::Optimizer;
+
 #[doc(hidden)]
 fn main() -> Result<(), String> {
     let args: ArgMatches = App::new("Open Neural Network Benchmarker (ONNB)")
@@ -65,16 +67,17 @@ fn main() -> Result<(), String> {
     match NetworkDataDe::from_json(&data_contents, &network_contents) {
         Ok(mut result) => {
             let now = SystemTime::now();
-            let mut network = result.network;
+            let mut network: Network = result.network;
 
             println!("Network successfully created\nStarting training cycle...\n");
-            let optimizer = result.optimizer.as_mut();
+            let optimizer: &mut dyn Optimizer = result.optimizer.as_mut();
 
             network.fit(
                 &result.inputs,
                 &result.outputs,
                 optimizer,
-                result.metric,
+                result.metric.as_ref(),
+                result.cost.as_ref(),
                 result.epochs,
                 result.batch_size
             );

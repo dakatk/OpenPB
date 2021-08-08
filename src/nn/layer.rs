@@ -1,5 +1,4 @@
 use super::activation::ActivationFn;
-use super::cost::Cost;
 use ndarray::{Array, Array2};
 use ndarray_rand::RandomExt;
 use rand::distributions::{Distribution, Uniform};
@@ -139,31 +138,51 @@ impl Layer {
     /// 'None' if 'self' is the layer that produces the final output
     /// * `cost` - The cost or loss function associated with the
     /// training setup
-    pub fn back_prop(
-        &mut self,
-        actual: &Array2<f64>,
-        target: &Array2<f64>,
-        attached_layer: Option<Layer>,
-        cost: Box<dyn Cost>
-    ) {
-        let attached_delta: Array2<f64>;
+    pub fn back_prop(&mut self, attached_layer: &Layer) {
+        let attached_delta = attached_layer.weights.t().dot(&attached_layer.delta);
+        self.back_prop_with_delta(&attached_delta);
+    }
+    // pub fn back_prop(
+    //     &mut self,
+    //     actual: &Array2<f64>,
+    //     target: &Array2<f64>,
+    //     attached_layer: Option<Layer>,
+    //     cost: Box<dyn Cost>
+    // ) {
+    //     let attached_delta: Array2<f64>;
 
-        match attached_layer {
-            Some(layer) => attached_delta = layer.weights.t().dot(&layer.delta),
-            _ => attached_delta = cost.prime(&actual, &target)
-        };
+    //     match attached_layer {
+    //         Some(layer) => attached_delta = layer.weights.t().dot(&layer.delta),
+    //         _ => attached_delta = cost.prime(&actual, &target)
+    //     };
 
-        self.delta = self.activation_fn.prime(&self.activations) * &attached_delta;
+    //     self.delta = self.activation_fn.prime(&self.activations) * &attached_delta;
 
+    //     match self.dropout {
+    //         Some(_) => {
+    //             let zeros = Array::zeros(1);
+    //             for dropped_neuron in self.dropped_neurons.iter() {
+    //                 self.delta.row_mut(*dropped_neuron).assign(&zeros);
+    //             }
+    //         }
+    //         None => ()
+    //     }
+    // }
+
+    pub fn back_prop_with_delta(&mut self, delta: &Array2<f64>) {
+        self.delta = self.activation_fn.prime(&self.activations) * delta;
+        self.drop_neurons();
+    }
+
+    fn drop_neurons(&mut self) {
         match self.dropout {
             Some(_) => {
                 let zeros = Array::zeros(1);
-
                 for dropped_neuron in self.dropped_neurons.iter() {
                     self.delta.row_mut(*dropped_neuron).assign(&zeros);
                 }
             }
-            None => ()
+            None => {}
         }
     }
 
