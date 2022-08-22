@@ -1,5 +1,5 @@
 use super::activation::ActivationFn;
-use ndarray::{Array, Array2};
+use ndarray::{Array1, Array2, Axis};
 use ndarray_rand::RandomExt;
 use rand::distributions::{Distribution, Uniform};
 use rand::prelude::*;
@@ -91,41 +91,31 @@ impl Layer {
         match self.dropout {
             Some(dropout) => {
                 self.dropped_neurons.clear();
-                self.map_output_with_dropout(output, dropout)
+                self.map_output_to_dropout(output, dropout)
             }
             None => output
         }
     }
 
-    pub fn feed_forward_no_dropout(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
+    pub fn predict(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
-        let output: Array2<f64> = self.activation_fn.call(&activations);
-
-        self.inputs.assign(inputs);
-        self.activations.assign(&activations);
-
-        output
+        self.activation_fn.call(&activations)
     }
 
-    fn map_output_with_dropout(
-        &mut self,
-        output: Array2<f64>,
-        dropout: f32
-    ) -> Array2<f64> {
-        let range = Uniform::new(0.0, 1.0);
+    fn map_output_to_dropout(&mut self, mut output: Array2<f64>, dropout: f32) -> Array2<f64> {
+        let range: Uniform<f32> = Uniform::new(0.0, 1.0);
+        let zeros: Array1<f64> = Array1::zeros(output.dim().1);
+
         let mut rng = thread_rng();
-        let mut index: usize = 0;
 
-        output.mapv(|el| {
+        for (i, mut row) in output.axis_iter_mut(Axis(0)).enumerate() {
             let sample: f32 = range.sample(&mut rng);
-            let value = if sample < dropout {
-                self.dropped_neurons.push(index);
-                0.0
-            } else { el };
-
-            index += 1;
-            value
-        })
+            if sample < dropout {
+                self.dropped_neurons.push(i);
+                row.assign(&zeros);
+            }
+        }
+        output
     }
 
     /// Backpropogation step where the deltas for each layer are calculated
@@ -147,14 +137,14 @@ impl Layer {
     /// 
     pub fn back_prop_with_delta(&mut self, delta: &Array2<f64>) {
         self.delta = self.activation_fn.prime(&self.activations) * delta;
-        // self.drop_neurons();
+        self.drop_neurons();
     }
 
-    // FIXME
+    /// 
     fn drop_neurons(&mut self) {
         match self.dropout {
             Some(_) => {
-                let zeros = Array::zeros(1);
+                let zeros: Array1<f64> = Array1::zeros(self.delta.dim().1);
                 for dropped_neuron in self.dropped_neurons.iter() {
                     self.delta.row_mut(*dropped_neuron).assign(&zeros);
                 }

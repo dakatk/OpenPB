@@ -103,8 +103,8 @@ impl Perceptron {
     /// * `epochs` - Maximum number of training cycles
     pub fn fit(
         &mut self,
-        inputs: &Array2<f64>,
-        outputs: &Array2<f64>,
+        training_set: &(Array2<f64>, Array2<f64>),
+        validation_set: &(Array2<f64>, Array2<f64>),
         optimizer: &mut dyn Optimizer,
         metric: &dyn Metric,
         cost: &dyn Cost,
@@ -115,15 +115,20 @@ impl Perceptron {
         let mut optimize = Optimize {};
         let mut last_epoch = epochs;
 
-        let expected: Array2<f64> = encoder.encode(&outputs).t().to_owned();
-        let input_rows: usize = inputs.dim().0;
+        let training_inputs: &Array2<f64> = &training_set.0;
+        let training_outputs: &Array2<f64> = &training_set.1;
+
+        let validation_inputs: &Array2<f64> = &validation_set.0;
+        let validation_outputs: &Array2<f64> = &validation_set.1;
+
+        let expected: Array2<f64> = encoder.encode(training_outputs).t().to_owned();
+        let input_rows: usize = training_inputs.dim().0;
 
         for epoch in 1..=epochs {
-            // TODO Predict from validation data instead of training data
-            let prediction: Array2<f64> = self.predict(&inputs, encoder);
-            let early_stop: bool = metric.call(&prediction, &outputs);
+            let prediction: Array2<f64> = self.predict(validation_inputs, encoder);
+            let early_stop: bool = metric.check(&prediction, validation_outputs);
 
-            let actual: Array2<f64> = self.feed_forward(&inputs);
+            let actual: Array2<f64> = self.feed_forward(training_inputs);
             let delta: Array2<f64> = cost.prime(&actual, &expected);
             self.back_prop(&delta);
 
@@ -176,7 +181,7 @@ impl Perceptron {
     pub fn predict(&mut self, inputs: &Array2<f64>, encoder: &dyn Encoder) -> Array2<f64> {
         let mut output: Array2<f64> = inputs.to_owned();
         for layer in self.layers.iter_mut() {
-            output = layer.feed_forward_no_dropout(&output);
+            output = layer.predict(&output);
         }
         encoder.decode(&output)
     }

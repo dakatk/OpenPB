@@ -6,14 +6,15 @@ mod parse_json;
 use clap::{App, Arg, ArgMatches};
 use ndarray::Array2;
 use nn::perceptron::Perceptron;
+use nn::optimizer::Optimizer;
+use nn::metric::Metric;
 use parse_json::NetworkDataDe;
 use std::fs;
 use std::io;
 use std::io::Write;
 use std::time::{Duration, SystemTime};
 
-use crate::nn::optimizer::Optimizer;
-
+// TODO Documentation (for everything else)
 #[doc(hidden)]
 fn main() -> Result<(), String> {
     let args: ArgMatches = App::new("Open Neural Network Benchmarker (ONNB)")
@@ -77,15 +78,22 @@ fn train_from_json(de_data: &mut NetworkDataDe, args: &ArgMatches) -> Result<(),
 
     println!("Network successfully created\nStarting training cycle...\n");
     let optimizer: &mut dyn Optimizer = de_data.optimizer.as_mut();
+    let metric: &dyn Metric = de_data.metric.as_ref();
 
-    let train_inputs: &Array2<f64> = &de_data.inputs.t().to_owned();
-    let train_outputs: &Array2<f64> = &de_data.outputs;
+    let training_set: (Array2<f64>, Array2<f64>) = (
+        de_data.train_inputs.t().to_owned(),
+        de_data.train_outputs.to_owned()
+    );
+    let validation_set: (Array2<f64>, Array2<f64>) = (
+        de_data.test_inputs.t().to_owned(),
+        de_data.test_outputs.to_owned()
+    );
 
     network.fit(
-        train_inputs,
-        train_outputs,
+        &training_set,
+        &validation_set,
         optimizer,
-        de_data.metric.as_ref(),
+        metric,
         de_data.cost.as_ref(),
         de_data.encoder.as_ref(),
         de_data.epochs,
@@ -94,10 +102,14 @@ fn train_from_json(de_data: &mut NetworkDataDe, args: &ArgMatches) -> Result<(),
     let elapsed: Duration = now.elapsed().unwrap();
     println!("Finished after {} seconds\n", elapsed.as_secs_f32());
 
-    // TODO Validation (test) data
-    let prediction: Array2<f64> = network.predict(&de_data.inputs.t().to_owned(), de_data.encoder.as_ref());
+    let prediction: Array2<f64> = network.predict(&validation_set.0, de_data.encoder.as_ref());
+
+    let metric_check: bool = metric.check(&prediction, &validation_set.1);
+    let metric_value: f64 = metric.value(&prediction, &validation_set.1);
+
+    println!("{}: {} (passed: {})\n", metric.label(), metric_check, metric_value);
     println!("Final prediction for validation set:\n{}\n", prediction);
-    println!("Expected outputs from validation set:\n{}\n", train_outputs);
+    println!("Expected outputs from validation set:\n{}\n", &validation_set.1);
 
     choose_to_save(&args, &network)
 }

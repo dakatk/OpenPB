@@ -5,13 +5,19 @@ use serde_json::Value;
 /// Defines a way to check how well our Network has fit te data so far.
 /// Used in the Network fit function to determine early stopping conditions
 pub trait Metric {
+    /// Metric name for command line output
+    fn label(&self) -> &str;
+
+    /// 
+    fn value(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> f64;
+
     /// Returns true if the given sets of values satisfy the metric
     ///
     /// # Arguments
     ///
     /// * `o` - Actual values
     /// * `y` - Expected values
-    fn call(&self, o: &Array2<f64>, y: &Array2<f64>) -> bool;
+    fn check(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> bool;
 }
 
 /// Metric that is satisfied when a certain percentage
@@ -30,15 +36,23 @@ impl Accuracy {
 }
 
 impl Metric for Accuracy {
-    fn call(&self, o: &Array2<f64>, y: &Array2<f64>) -> bool {
-        let equality: Vec<usize> = o.iter()
-            .zip(y)
+    fn label(&self) -> &str {
+        "Accuracy"
+    }
+
+    fn value(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> f64 {
+        let equality: Vec<usize> = actual.iter()
+            .zip(expected)
             .map(
                 |a: (&f64, &f64)| 
                 (a.0 == a.1) as usize
             ).collect();
         let len = equality.len() as f64;
         let sum = equality.into_iter().sum::<usize>() as f64;
-        (sum / len) >= self.min
+        sum / len
+    }
+    
+    fn check(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> bool {
+        self.value(actual, expected) >= self.min
     }
 }

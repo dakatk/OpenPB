@@ -15,11 +15,17 @@ use std::path::Path;
 /// Deserialized values representing both input and output data in JSON
 #[derive(Deserialize, Debug)]
 struct DataDe {
-    /// Input data
-    inputs: Array2<f64>,
+    /// Training set input data
+    train_inputs: Array2<f64>,
 
-    /// Output data
-    outputs: Array2<f64>
+    /// Training set output data
+    train_outputs: Array2<f64>,
+
+    /// Validation set input data
+    test_inputs: Array2<f64>,
+
+    /// Validation set output data
+    test_outputs: Array2<f64>
 }
 
 /// Deserialized values representing a single Layer in JSON
@@ -98,11 +104,17 @@ pub struct NetworkDataDe {
     /// Netowkr object
     pub network: Perceptron,
 
-    /// Training data inputs
-    pub inputs: Array2<f64>,
+    /// Training set input data
+    pub train_inputs: Array2<f64>,
 
-    /// Training data outputs
-    pub outputs: Array2<f64>,
+    /// Training set output data
+    pub train_outputs: Array2<f64>,
+
+    /// Validation set input data
+    pub test_inputs: Array2<f64>,
+
+    /// Validation set output data
+    pub test_outputs: Array2<f64>,
 
     /// Network cost function
     pub cost: Box<dyn Cost>,
@@ -130,11 +142,11 @@ impl NetworkDataDe {
 
         // let input_values: InputDe = data_de.inputs;
         // let output_values: OutputDe = data_de.outputs;
-        let inputs: Array2<f64> = data_de.inputs;
-        let outputs: Array2<f64> = data_de.outputs;
+        let train_inputs: Array2<f64> = data_de.train_inputs;
+        let train_outputs: Array2<f64> = data_de.train_outputs;
 
         let mut network = Perceptron::new();
-        let input_shape: (usize, usize) = (inputs.dim().1, inputs.dim().0);
+        let input_shape: (usize, usize) = (train_inputs.dim().1, train_inputs.dim().0);
         let mut input_shape: Option<(usize, usize)> = Some(input_shape);
 
         for layer in network_de.layers.iter() {
@@ -171,8 +183,10 @@ impl NetworkDataDe {
 
         Ok(NetworkDataDe {
             network,
-            inputs,
-            outputs,
+            train_inputs,
+            train_outputs,
+            test_inputs: data_de.test_inputs,
+            test_outputs: data_de.test_outputs,
             cost,
             metric,
             encoder,
@@ -213,12 +227,12 @@ fn decode_from_str(decode_de: EncoderDe) -> Option<Box<dyn Encoder>> {
 }
 
 fn optimizer_from_str(optimizer_de: OptimizerDe) -> Option<Box<dyn Optimizer>> {
-    let beta1 = match optimizer_de.beta1 {
+    let beta1: f64 = match optimizer_de.beta1 {
         Some(beta1) => beta1,
         None => optimizer::DEFAULT_GAMMA
     };
 
-    let beta2 = match optimizer_de.beta1 {
+    let beta2: f64 = match optimizer_de.beta2 {
         Some(beta2) => beta2,
         None => optimizer::DEFAULT_BETA
     };
