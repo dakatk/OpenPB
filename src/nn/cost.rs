@@ -28,7 +28,7 @@ pub trait DynClone {
 
 impl<T> DynClone for T
 where
-    T: 'static + Cost + Clone
+    T: 'static + Cost + Clone,
 {
     fn clone_box(&self) -> Box<dyn Cost> {
         Box::new(self.clone())

@@ -1,4 +1,3 @@
-binop_separator = "Back"
 edition = "2018"
-# space_before_fn_sig_paren = true
+binop_separator = "Back"
 trailing_comma = "Never"

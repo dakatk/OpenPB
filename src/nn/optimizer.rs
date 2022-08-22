@@ -1,7 +1,7 @@
 use super::layer::Layer;
 use ndarray::Array2;
 
-/// Wrapper for updating a network with any given 
+/// Wrapper for updating a network with any given
 /// optimization function using online training
 pub fn optimize(optimizer: &mut dyn Optimizer, layers: &mut Vec<Layer>, input_rows: usize) {
     // TODO Minibatch support?
@@ -37,7 +37,7 @@ pub struct SGD {
     gamma: f64,
 
     /// Set of moment values for use in classical momentum
-    moments: Vec<Array2<f64>>
+    moments: Vec<Array2<f64>>,
 }
 
 impl SGD {
@@ -49,7 +49,7 @@ impl SGD {
         SGD {
             learning_rate,
             gamma,
-            moments: vec![]
+            moments: vec![],
         }
     }
 }
@@ -57,7 +57,7 @@ impl SGD {
 impl Optimizer for SGD {
     fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>, input_rows: usize) {
         for (i, layer) in layers.iter_mut().enumerate() {
-            // Convert activation (z) deltas from initial back-prop run 
+            // Convert activation (z) deltas from initial back-prop run
             // into weight and bias deltas
             let delta_weights: Array2<f64> = self.learning_rate * deltas[i].dot(&layer.inputs.t());
             let delta_biases: Array2<f64> = self.learning_rate * &deltas[i];
@@ -100,7 +100,7 @@ pub struct Adam {
     velocities: Vec<Array2<f64>>,
 
     /// Set of moment values for use in classical momentum
-    moments: Vec<Array2<f64>>
+    moments: Vec<Array2<f64>>,
 }
 
 impl Adam {
@@ -115,7 +115,7 @@ impl Adam {
             gamma,
             beta,
             velocities: vec![],
-            moments: vec![]
+            moments: vec![],
         }
     }
 }
@@ -125,7 +125,7 @@ impl Optimizer for Adam {
         self.time_step += 1;
 
         for (i, layer) in layers.iter_mut().enumerate() {
-            // Convert activation (z) deltas from initial back-prop run 
+            // Convert activation (z) deltas from initial back-prop run
             // into weight and bias deltas
             let delta_weights: Array2<f64> = deltas[i].dot(&layer.inputs.t());
             let delta_biases: Array2<f64> = self.learning_rate * &deltas[i];
@@ -140,7 +140,7 @@ impl Optimizer for Adam {
                 self.moments.push(Array2::zeros(delta_weights.dim()));
             }
 
-            // Initial momentum calculation 
+            // Initial momentum calculation
             let moment: Array2<f64> =
                 (&self.moments[i] * self.gamma) + (&delta_weights * (1. - self.gamma));
 

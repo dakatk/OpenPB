@@ -1,10 +1,10 @@
-use crate::nn::cost::{Cost, MSE};
-use crate::nn::metric::{Accuracy, Metric};
-use crate::nn::perceptron::Perceptron;
-use crate::nn::optimizer::{Adam, Optimizer, SGD};
 use crate::nn::activation::{ActivationFn, LeakyReLU, ReLU, Sigmoid};
+use crate::nn::cost::{Cost, MSE};
 use crate::nn::encoder::{Encoder, OneHot};
+use crate::nn::metric::{Accuracy, Metric};
 use crate::nn::optimizer;
+use crate::nn::optimizer::{Adam, Optimizer, SGD};
+use crate::nn::perceptron::Perceptron;
 use ndarray::Array2;
 use serde::Deserialize;
 use serde_json::{Map, Value};
@@ -25,7 +25,7 @@ struct DataDe {
     test_inputs: Array2<f64>,
 
     /// Validation set output data
-    test_outputs: Array2<f64>
+    test_outputs: Array2<f64>,
 }
 
 /// Deserialized values representing a single Layer in JSON
@@ -38,7 +38,7 @@ struct LayerDe {
     dropout: Option<f32>,
 
     /// Name of activation function
-    activation: String
+    activation: String,
 }
 
 /// Deserialized values representing the Optimizer in JSON
@@ -54,17 +54,17 @@ struct OptimizerDe {
     beta1: Option<f64>,
 
     /// Optional secondary momentum constant
-    beta2: Option<f64>
+    beta2: Option<f64>,
 }
 
-/// 
+///
 #[derive(Deserialize, Debug)]
 struct EncoderDe {
     /// Name of the Decoder
     name: String,
 
     /// Constructor arguments
-    args: Map<String, Value>
+    args: Map<String, Value>,
 }
 
 /// Deserialized values representing the evaluation Metric in JSON
@@ -74,7 +74,7 @@ struct MetricDe {
     name: String,
 
     /// Constructor arguments
-    args: Map<String, Value>
+    args: Map<String, Value>,
 }
 
 /// Deserialized values representing the Network setup in JSON
@@ -96,7 +96,7 @@ struct NetworkDe {
     metric: MetricDe,
 
     /// Number of trianing epochs
-    epochs: u64
+    epochs: u64,
 }
 
 /// Container for all deserialized data needed to train a network
@@ -132,11 +132,11 @@ pub struct NetworkDataDe {
     pub epochs: u64,
 }
 
-/// 
+///
 impl NetworkDataDe {
     pub fn from_json<'a>(
         data_json: &'a str,
-        network_json: &'a str
+        network_json: &'a str,
     ) -> Result<NetworkDataDe, &'static str> {
         let data_de: DataDe = serde_json::from_str(data_json).unwrap();
         let network_de: NetworkDe = serde_json::from_str(network_json).unwrap();
@@ -151,10 +151,11 @@ impl NetworkDataDe {
         let mut input_shape: Option<(usize, usize)> = Some(input_shape);
 
         for layer in network_de.layers.iter() {
-            let activation_fn: Box<dyn ActivationFn> = match activation_from_str(layer.activation.to_lowercase()) {
-                Some(value) => value,
-                None => return Err("Invalid activation function name")
-            };
+            let activation_fn: Box<dyn ActivationFn> =
+                match activation_from_str(layer.activation.to_lowercase()) {
+                    Some(value) => value,
+                    None => return Err("Invalid activation function name"),
+                };
 
             network.add_layer(layer.neurons, input_shape, activation_fn, layer.dropout);
             if input_shape.is_some() {
@@ -164,22 +165,22 @@ impl NetworkDataDe {
 
         let cost: Box<dyn Cost> = match cost_from_str(network_de.cost.to_lowercase()) {
             Some(value) => value,
-            None => return Err("Invalid cost function name")
+            None => return Err("Invalid cost function name"),
         };
 
         let metric: Box<dyn Metric> = match metric_from_str(network_de.metric) {
             Some(value) => value,
-            None => return Err("Invalid metric name")
+            None => return Err("Invalid metric name"),
         };
 
         let encoder: Box<dyn Encoder> = match decode_from_str(network_de.encoder) {
             Some(value) => value,
-            None => return Err("Invalid decoder name")
+            None => return Err("Invalid decoder name"),
         };
 
         let optimizer = match optimizer_from_str(network_de.optimizer) {
             Some(value) => value,
-            None => return Err("Invalid activation function name")
+            None => return Err("Invalid activation function name"),
         };
 
         Ok(NetworkDataDe {
@@ -192,55 +193,55 @@ impl NetworkDataDe {
             metric,
             encoder,
             optimizer,
-            epochs: network_de.epochs
+            epochs: network_de.epochs,
         })
     }
 }
 
-/// 
+///
 fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
     match name.as_str() {
         "mse" => Some(Box::new(MSE)),
-        _ => None
+        _ => None,
     }
 }
 
-/// 
+///
 fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
     match name.as_str() {
         "sigmoid" => Some(Box::new(Sigmoid)),
         "relu" => Some(Box::new(ReLU)),
         "leakyrelu" => Some(Box::new(LeakyReLU)),
-        _ => None
+        _ => None,
     }
 }
 
-/// 
+///
 fn metric_from_str(metric_de: MetricDe) -> Option<Box<dyn Metric>> {
     match metric_de.name.to_lowercase().as_str() {
         "accuracy" => Some(Box::new(Accuracy::new(&metric_de.args))),
-        _ => None
+        _ => None,
     }
 }
 
-/// 
+///
 fn decode_from_str(decode_de: EncoderDe) -> Option<Box<dyn Encoder>> {
     match decode_de.name.to_lowercase().as_str() {
         "one_hot" | "onehot" => Some(Box::new(OneHot::new(&decode_de.args))),
-        _ => None
+        _ => None,
     }
 }
 
-/// 
+///
 fn optimizer_from_str(optimizer_de: OptimizerDe) -> Option<Box<dyn Optimizer>> {
     let beta1: f64 = match optimizer_de.beta1 {
         Some(beta1) => beta1,
-        None => optimizer::DEFAULT_GAMMA
+        None => optimizer::DEFAULT_GAMMA,
     };
 
     let beta2: f64 = match optimizer_de.beta2 {
         Some(beta2) => beta2,
-        None => optimizer::DEFAULT_BETA
+        None => optimizer::DEFAULT_BETA,
     };
 
     match optimizer_de.name.to_lowercase().as_str() {
@@ -248,9 +249,9 @@ fn optimizer_from_str(optimizer_de: OptimizerDe) -> Option<Box<dyn Optimizer>> {
         "adam" => Some(Box::new(Adam::new(
             optimizer_de.learning_rate,
             beta1,
-            beta2
+            beta2,
         ))),
-        _ => None
+        _ => None,
     }
 }
 
@@ -265,7 +266,7 @@ pub fn save_layer_values(network: &Perceptron, filename: &str) -> Result<(), Str
 
     let mut file = match File::create(&Path::new(filename)) {
         Ok(file) => file,
-        Err(msg) => return Err(format!("Failed to create file {}: {}", filename, msg))
+        Err(msg) => return Err(format!("Failed to create file {}: {}", filename, msg)),
     };
 
     let network_ser = serde_json::to_string_pretty(&network).unwrap();
@@ -275,6 +276,6 @@ pub fn save_layer_values(network: &Perceptron, filename: &str) -> Result<(), Str
             println!("Success!");
             Ok(())
         }
-        Err(msg) => Err(msg.to_string())
+        Err(msg) => Err(msg.to_string()),
     }
 }

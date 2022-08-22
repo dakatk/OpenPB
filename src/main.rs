@@ -1,15 +1,15 @@
 // To generate docs for this project, run command:
 // cargo doc --open --no-deps --document-private-items
-mod nn;
 mod file_io;
+mod nn;
 
 use clap::{App, Arg, ArgMatches};
-use ndarray::Array2;
-use nn::perceptron::Perceptron;
-use nn::optimizer::Optimizer;
-use nn::metric::Metric;
 use file_io::parse_json;
 use file_io::parse_json::NetworkDataDe;
+use ndarray::Array2;
+use nn::metric::Metric;
+use nn::optimizer::Optimizer;
+use nn::perceptron::Perceptron;
 use std::fs;
 use std::io;
 use std::io::Write;
@@ -28,7 +28,7 @@ fn main() -> Result<(), String> {
                 .takes_value(true)
                 .value_name("JSON_FILE")
                 .required(true)
-                .help("JSON file with input and output vectors")
+                .help("JSON file with input and output vectors"),
         )
         .arg(
             Arg::with_name("network")
@@ -37,7 +37,7 @@ fn main() -> Result<(), String> {
                 .takes_value(true)
                 .value_name("JSON_FILE")
                 .required(true)
-                .help("JSON file with network structure and hyperparameters")
+                .help("JSON file with network structure and hyperparameters"),
         )
         .arg(
             Arg::with_name("output")
@@ -46,7 +46,7 @@ fn main() -> Result<(), String> {
                 .takes_value(true)
                 .value_name("JSON_FILE")
                 .required(false)
-                .help("JSON file where weights and biases are stored (optional)")
+                .help("JSON file where weights and biases are stored (optional)"),
         )
         .get_matches();
 
@@ -58,17 +58,17 @@ fn main() -> Result<(), String> {
 
     match fs::read_to_string(&network_filename) {
         Ok(result) => network_contents = result,
-        _ => return Err(format!("'{}' missing or corrupted", network_filename))
+        _ => return Err(format!("'{}' missing or corrupted", network_filename)),
     };
 
     match fs::read_to_string(&data_filename) {
         Ok(result) => data_contents = result,
-        _ => return Err(format!("'{}' missing or corrupted", data_filename))
+        _ => return Err(format!("'{}' missing or corrupted", data_filename)),
     };
 
     match NetworkDataDe::from_json(&data_contents, &network_contents) {
         Ok(mut result) => train_from_json(&mut result, &args),
-        Err(msg) => Err(msg.to_string())
+        Err(msg) => Err(msg.to_string()),
     }
 }
 
@@ -83,11 +83,11 @@ fn train_from_json(de_data: &mut NetworkDataDe, args: &ArgMatches) -> Result<(),
 
     let training_set: (Array2<f64>, Array2<f64>) = (
         de_data.train_inputs.t().to_owned(),
-        de_data.train_outputs.to_owned()
+        de_data.train_outputs.to_owned(),
     );
     let validation_set: (Array2<f64>, Array2<f64>) = (
         de_data.test_inputs.t().to_owned(),
-        de_data.test_outputs.to_owned()
+        de_data.test_outputs.to_owned(),
     );
 
     network.fit(
@@ -98,7 +98,7 @@ fn train_from_json(de_data: &mut NetworkDataDe, args: &ArgMatches) -> Result<(),
         de_data.cost.as_ref(),
         de_data.encoder.as_ref(),
         de_data.epochs,
-        false
+        false,
     );
 
     // TODO Better output formatting (maybe CSV?)
@@ -111,9 +111,17 @@ fn train_from_json(de_data: &mut NetworkDataDe, args: &ArgMatches) -> Result<(),
     let metric_check: bool = metric.check(&prediction, &validation_set.1);
     let metric_value: f64 = metric.value(&prediction, &validation_set.1);
 
-    println!("{}: {} (passed: {})\n", metric.label(), metric_check, metric_value);
+    println!(
+        "{}: {} (passed: {})\n",
+        metric.label(),
+        metric_check,
+        metric_value
+    );
     println!("Final prediction for validation set:\n{}\n", prediction);
-    println!("Expected outputs from validation set:\n{}\n", &validation_set.1);
+    println!(
+        "Expected outputs from validation set:\n{}\n",
+        &validation_set.1
+    );
 
     choose_to_save(&args, &network)
 }
@@ -133,7 +141,7 @@ fn choose_to_save(args: &ArgMatches, network: &Perceptron) -> Result<(), String>
                 let out_file: String = user_input("Filename: ");
                 parse_json::save_layer_values(network, &out_file.as_str())
             }
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 }

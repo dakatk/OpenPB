@@ -12,7 +12,7 @@ use serde::ser::{Serialize, SerializeStruct, Serializer};
 pub struct Perceptron {
     /// Input, hidden, and output layers. Each layer is considered
     /// to be 'connected' to the next one in the list
-    layers: Vec<Layer>
+    layers: Vec<Layer>,
 }
 
 impl Perceptron {
@@ -20,9 +20,7 @@ impl Perceptron {
     ///
     /// * `cost` - Loss function for error reporting/backprop
     pub fn new() -> Perceptron {
-        Perceptron {
-            layers: vec![]
-        }
+        Perceptron { layers: vec![] }
     }
 
     /// Creates a new layer and adds it to the Network. Used only for the
@@ -39,7 +37,7 @@ impl Perceptron {
         neurons: usize,
         input_shape: (usize, usize),
         activation_fn: Box<dyn ActivationFn>,
-        dropout: Option<f32>
+        dropout: Option<f32>,
     ) {
         self.layers
             .push(Layer::new(neurons, input_shape, activation_fn, dropout));
@@ -57,14 +55,18 @@ impl Perceptron {
         &mut self,
         neurons: usize,
         activation_fn: Box<dyn ActivationFn>,
-        dropout: Option<f32>
+        dropout: Option<f32>,
     ) {
         let prev_layer: &mut Layer = self.layers.last_mut().unwrap();
         let prev_neurons: usize = prev_layer.neurons;
         let prev_inputs: usize = prev_layer.inputs.ncols();
 
-        self.layers
-            .push(Layer::new(neurons, (prev_neurons, prev_inputs), activation_fn, dropout));
+        self.layers.push(Layer::new(
+            neurons,
+            (prev_neurons, prev_inputs),
+            activation_fn,
+            dropout,
+        ));
     }
 
     /// Add a Layer to the next open spot in the Network's structure. This function
@@ -81,11 +83,11 @@ impl Perceptron {
         neurons: usize,
         input_shape: Option<(usize, usize)>,
         activation_fn: Box<dyn ActivationFn>,
-        dropout: Option<f32>
+        dropout: Option<f32>,
     ) {
         match input_shape {
             Some(input_shape) => self.add_input_layer(neurons, input_shape, activation_fn, dropout),
-            _ => self.add_hidden_layer(neurons, activation_fn, dropout)
+            _ => self.add_hidden_layer(neurons, activation_fn, dropout),
         }
     }
 
@@ -101,8 +103,8 @@ impl Perceptron {
     /// * `optimizer` - Optimization method used when performing gradient descent
     /// * `metric` - Decides when the Network is performing 'good enough'
     /// on the provided validation data
-    /// * `cost` - 
-    /// * `encoder` - 
+    /// * `cost` -
+    /// * `encoder` -
     /// * `epochs` - Maximum number of training cycles
     /// * `shuffle` - When 'true', training inputs are shuffled at the start of
     /// each training cycle
@@ -115,7 +117,7 @@ impl Perceptron {
         cost: &dyn Cost,
         encoder: &dyn Encoder,
         epochs: u64,
-        shuffle: bool
+        shuffle: bool,
     ) {
         // Keep track of which iteration training ended on
         // (default is the maximum number of epochs)
@@ -129,7 +131,7 @@ impl Perceptron {
         let validation_inputs: &Array2<f64> = &validation_set.0;
         let validation_outputs: &Array2<f64> = &validation_set.1;
 
-        // Encode training set output values to match 
+        // Encode training set output values to match
         // the network's output format
         let expected: Array2<f64> = encoder.encode(training_outputs).t().to_owned();
         let input_rows: usize = training_inputs.nrows();
@@ -153,7 +155,7 @@ impl Perceptron {
             self.back_prop(&delta);
 
             // Update network weights/biases using
-            // the given Optimizer 
+            // the given Optimizer
             optimize(optimizer, &mut self.layers, input_rows);
         }
         println!("Training ended on epoch {}\n", last_epoch);
@@ -175,23 +177,23 @@ impl Perceptron {
 
     /// Performs the backpropogation step for all layers to calculate
     /// the appropriate deltas for the optimization step
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `deltas` - Delta values matrix calculated from output layer
     pub fn back_prop(&mut self, delta: &Array2<f64>) {
         let mut attached_layer: Option<&Layer> = None;
         for layer in self.layers.iter_mut().rev() {
             match attached_layer {
                 Some(attached_layer) => layer.back_prop(attached_layer),
-                None => layer.back_prop_with_delta(delta)
+                None => layer.back_prop_with_delta(delta),
             };
             attached_layer = Some(layer);
         }
     }
 
     /// Computes the network's prediction for a given input.
-    /// Assumes the network has already been trained, therefore 
+    /// Assumes the network has already been trained, therefore
     /// Dropout Regularization is not taken into account
     ///
     /// # Arguments
@@ -210,7 +212,7 @@ impl Perceptron {
 impl Serialize for Perceptron {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer
+        S: Serializer,
     {
         let mut s = serializer.serialize_struct("Perceptron", 1)?;
         s.serialize_field("layers", &self.layers)?;

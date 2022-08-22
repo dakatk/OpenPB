@@ -37,7 +37,7 @@ pub struct Layer {
 
     /// Row indices of neurons that have been dropped out
     /// temporarily during training
-    dropped_neurons: Vec<usize>
+    dropped_neurons: Vec<usize>,
 }
 
 impl Layer {
@@ -51,7 +51,7 @@ impl Layer {
         neurons: usize,
         input_shape: (usize, usize),
         activation_fn: Box<dyn ActivationFn>,
-        dropout: Option<f32>
+        dropout: Option<f32>,
     ) -> Layer {
         let weights: Array2<f64> = Array2::random((neurons, input_shape.0), Uniform::new(0., 1.));
         let weights: Array2<f64> = weights / f64::sqrt(input_shape.0 as f64);
@@ -73,7 +73,7 @@ impl Layer {
             activations,
             activation_fn,
             dropout,
-            dropped_neurons
+            dropped_neurons,
         }
     }
 
@@ -94,7 +94,7 @@ impl Layer {
                 self.dropped_neurons.clear();
                 self.map_output_to_dropout(outputs, dropout)
             }
-            None => outputs
+            None => outputs,
         }
     }
 
@@ -111,9 +111,9 @@ impl Layer {
 
     /// Randomly choose dropped neurons for the current training cycle and
     /// change the respective output vectors to zeroed vectors of the same size
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `outputs` - Matrix of output vectors from last feedforward pass for
     /// the current layer
     /// * `dropout` - Rate at which neurons are dropped during training
@@ -149,9 +149,9 @@ impl Layer {
     }
 
     /// Computes current layer's delta values from attached layer's deltas
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `attached_deltas` - Attached layer's deltas (assumed to have
     /// already been computed)
     pub fn back_prop_with_delta(&mut self, attached_delta: &Array2<f64>) {
@@ -179,7 +179,12 @@ impl Layer {
     ///
     /// * `delta_weights` - Change in the weight values
     /// * `delta_biases` - Change in the bias values
-    pub fn update(&mut self, delta_weights: &Array2<f64>, delta_biases: &Array2<f64>, input_rows: usize) {
+    pub fn update(
+        &mut self,
+        delta_weights: &Array2<f64>,
+        delta_biases: &Array2<f64>,
+        input_rows: usize,
+    ) {
         let delta_weights: Array2<f64> = delta_weights / (input_rows as f64);
         let delta_biases: f64 = delta_biases.sum() / (input_rows as f64);
 
@@ -194,7 +199,7 @@ impl Layer {
 impl Serialize for Layer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer
+        S: Serializer,
     {
         let mut s = serializer.serialize_struct("Layer", 2)?;
 
