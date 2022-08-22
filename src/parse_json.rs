@@ -132,6 +132,7 @@ pub struct NetworkDataDe {
     pub epochs: u64,
 }
 
+/// 
 impl NetworkDataDe {
     pub fn from_json<'a>(
         data_json: &'a str,
@@ -196,6 +197,7 @@ impl NetworkDataDe {
     }
 }
 
+/// 
 fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
     match name.as_str() {
         "mse" => Some(Box::new(MSE)),
@@ -203,6 +205,7 @@ fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
     }
 }
 
+/// 
 fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
     match name.as_str() {
         "sigmoid" => Some(Box::new(Sigmoid)),
@@ -212,6 +215,7 @@ fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
     }
 }
 
+/// 
 fn metric_from_str(metric_de: MetricDe) -> Option<Box<dyn Metric>> {
     match metric_de.name.to_lowercase().as_str() {
         "accuracy" => Some(Box::new(Accuracy::new(&metric_de.args))),
@@ -219,6 +223,7 @@ fn metric_from_str(metric_de: MetricDe) -> Option<Box<dyn Metric>> {
     }
 }
 
+/// 
 fn decode_from_str(decode_de: EncoderDe) -> Option<Box<dyn Encoder>> {
     match decode_de.name.to_lowercase().as_str() {
         "one_hot" | "onehot" => Some(Box::new(OneHot::new(&decode_de.args))),
@@ -226,6 +231,7 @@ fn decode_from_str(decode_de: EncoderDe) -> Option<Box<dyn Encoder>> {
     }
 }
 
+/// 
 fn optimizer_from_str(optimizer_de: OptimizerDe) -> Option<Box<dyn Optimizer>> {
     let beta1: f64 = match optimizer_de.beta1 {
         Some(beta1) => beta1,

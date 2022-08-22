@@ -97,8 +97,11 @@ fn train_from_json(de_data: &mut NetworkDataDe, args: &ArgMatches) -> Result<(),
         de_data.cost.as_ref(),
         de_data.encoder.as_ref(),
         de_data.epochs,
+        false
     );
 
+    // TODO Better output formatting (maybe CSV?)
+    // TODO Multi-threading (save training data per thread)
     let elapsed: Duration = now.elapsed().unwrap();
     println!("Finished after {} seconds\n", elapsed.as_secs_f32());
 

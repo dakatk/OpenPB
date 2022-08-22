@@ -3,15 +3,9 @@ use ndarray::Array2;
 
 /// Wrapper for updating a network with any given 
 /// optimization function using online training
-pub struct Optimize {}
-
-impl Optimize {
-    /// Online training
-    pub fn update(&mut self, optimizer: &mut dyn Optimizer, layers: &mut Vec<Layer>, input_rows: usize) {
-        // TODO Shuffle option?
-        let deltas: Vec<Array2<f64>> = layers.iter().map(|l| l.delta.clone()).collect();
-        optimizer.update(layers, &deltas, input_rows);
-    }
+pub fn optimize(optimizer: &mut dyn Optimizer, layers: &mut Vec<Layer>, input_rows: usize) {
+    let deltas: Vec<Array2<f64>> = layers.iter().map(|l| l.delta.clone()).collect();
+    optimizer.update(layers, &deltas, input_rows);
 }
 
 /// Default momentum constant

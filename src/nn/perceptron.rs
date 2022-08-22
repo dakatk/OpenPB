@@ -3,7 +3,7 @@ use super::cost::Cost;
 use super::encoder::Encoder;
 use super::layer::Layer;
 use super::metric::Metric;
-use super::optimizer::{Optimize, Optimizer};
+use super::optimizer::{optimize, Optimizer};
 use ndarray::Array2;
 // use rand::prelude::*;
 // use rand::seq::SliceRandom;
@@ -109,35 +109,47 @@ impl Perceptron {
         metric: &dyn Metric,
         cost: &dyn Cost,
         encoder: &dyn Encoder,
-        epochs: u64
-
+        epochs: u64,
+        shuffle: bool
     ) {
-        let mut optimize = Optimize {};
-        let mut last_epoch = epochs;
+        // Keep track of which iteration training ended on
+        // (default is the maximum number of epochs)
+        let mut last_epoch: u64 = epochs;
 
+        // Split training set
         let training_inputs: &Array2<f64> = &training_set.0;
         let training_outputs: &Array2<f64> = &training_set.1;
 
+        // Split validation set
         let validation_inputs: &Array2<f64> = &validation_set.0;
         let validation_outputs: &Array2<f64> = &validation_set.1;
 
+        // Encode training set output values to match 
+        // the network's output format
         let expected: Array2<f64> = encoder.encode(training_outputs).t().to_owned();
         let input_rows: usize = training_inputs.dim().0;
 
         for epoch in 1..=epochs {
+            if shuffle {
+                // TODO Shuffle training set
+            }
+            // Check network prediction against validation set
             let prediction: Array2<f64> = self.predict(validation_inputs, encoder);
             let early_stop: bool = metric.check(&prediction, validation_outputs);
+
+            // Stop training if early stopping metric criteria has been met
+            if early_stop {
+                last_epoch = epoch;
+                break;
+            }
 
             let actual: Array2<f64> = self.feed_forward(training_inputs);
             let delta: Array2<f64> = cost.prime(&actual, &expected);
             self.back_prop(&delta);
 
-            optimize.update(optimizer, &mut self.layers, input_rows);
-
-            if early_stop {
-                last_epoch = epoch;
-                break;
-            }
+            // Update network weights/biases using
+            // the given Optimizer 
+            optimize(optimizer, &mut self.layers, input_rows);
         }
         println!("Training ended on epoch {}\n", last_epoch);
     }

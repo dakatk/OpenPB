@@ -6,9 +6,19 @@ pub trait Cost: DynClone {
     ///
     /// # Arguments
     ///
-    /// * `o` - Actual values
-    /// * `y` - Expected values
-    fn prime(&self, o: &Array2<f64>, y: &Array2<f64>) -> Array2<f64>;
+    /// * `actual` - Actual values
+    /// * `expected` - Expected values
+    fn prime(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> Array2<f64>;
+}
+
+/// Mean Squared Error loss function
+#[derive(Clone)]
+pub struct MSE;
+
+impl Cost for MSE {
+    fn prime(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> Array2<f64> {
+        actual - expected
+    }
 }
 
 pub trait DynClone {
@@ -28,15 +38,5 @@ where
 impl Clone for Box<dyn Cost> {
     fn clone(&self) -> Box<dyn Cost> {
         self.clone_box()
-    }
-}
-
-/// Mean Squared Error loss function
-#[derive(Clone)]
-pub struct MSE;
-
-impl Cost for MSE {
-    fn prime(&self, o: &Array2<f64>, y: &Array2<f64>) -> Array2<f64> {
-        o - y
     }
 }

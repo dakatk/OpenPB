@@ -97,14 +97,16 @@ impl Layer {
         }
     }
 
+    /// 
     pub fn predict(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
         self.activation_fn.call(&activations)
     }
 
+    /// 
     fn map_output_to_dropout(&mut self, mut output: Array2<f64>, dropout: f32) -> Array2<f64> {
         let range: Uniform<f32> = Uniform::new(0.0, 1.0);
-        let zeros: Array1<f64> = Array1::zeros(output.dim().1);
+        let zeros: Array1<f64> = Array1::zeros(output.ncols());
 
         let mut rng = thread_rng();
 
