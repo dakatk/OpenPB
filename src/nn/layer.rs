@@ -46,6 +46,7 @@ impl Layer {
     /// * `neurons` - Number of neurons, determines how many weights/biases are present
     /// * `inputs` - Size of expected input vector
     /// * `activation_fn` - Function that determines the activation of individual neurons
+    /// * `dropout` - Optional rate for randomly excluding neurons during each training cycle
     pub fn new(
         neurons: usize,
         input_shape: (usize, usize),
@@ -80,10 +81,10 @@ impl Layer {
     ///
     /// # Arguments
     ///
-    /// * `inputs` - Input vector to calculate activation values
+    /// * `inputs` - Matrix of input vectors (outputs from previous layer)
     pub fn feed_forward(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
-        let output: Array2<f64> = self.activation_fn.call(&activations);
+        let outputs: Array2<f64> = self.activation_fn.call(&activations);
 
         self.inputs.assign(inputs);
         self.activations.assign(&activations);
@@ -91,33 +92,45 @@ impl Layer {
         match self.dropout {
             Some(dropout) => {
                 self.dropped_neurons.clear();
-                self.map_output_to_dropout(output, dropout)
+                self.map_output_to_dropout(outputs, dropout)
             }
-            None => output
+            None => outputs
         }
     }
 
-    /// 
+    /// Same as `feed_forward`, but dropout isn't applied and internal values aren't
+    /// saved. This function is meant to get predictions from a fully-trained network
+    ///
+    /// # Arguments
+    ///
+    /// * `inputs` - Matrix of input vectors (outputs from previous layer)
     pub fn predict(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
         self.activation_fn.call(&activations)
     }
 
+    /// Randomly choose dropped neurons for the current training cycle and
+    /// change the respective output vectors to zeroed vectors of the same size
     /// 
-    fn map_output_to_dropout(&mut self, mut output: Array2<f64>, dropout: f32) -> Array2<f64> {
+    /// # Arguments
+    /// 
+    /// * `outputs` - Matrix of output vectors from last feedforward pass for
+    /// the current layer
+    /// * `dropout` - Rate at which neurons are dropped during training
+    fn map_output_to_dropout(&mut self, mut outputs: Array2<f64>, dropout: f32) -> Array2<f64> {
         let range: Uniform<f32> = Uniform::new(0.0, 1.0);
-        let zeros: Array1<f64> = Array1::zeros(output.ncols());
+        let zeros: Array1<f64> = Array1::zeros(outputs.ncols());
 
         let mut rng = thread_rng();
 
-        for (i, mut row) in output.axis_iter_mut(Axis(0)).enumerate() {
+        for (i, mut row) in outputs.axis_iter_mut(Axis(0)).enumerate() {
             let sample: f32 = range.sample(&mut rng);
             if sample < dropout {
                 self.dropped_neurons.push(i);
                 row.assign(&zeros);
             }
         }
-        output
+        outputs
     }
 
     /// Backpropogation step where the deltas for each layer are calculated
@@ -127,8 +140,7 @@ impl Layer {
     ///
     /// * `actual` - The predicted output produced by the network
     /// * `target` - The expected output value
-    /// * `attached_layer` - The next layer in the network. Should be
-    /// 'None' if 'self' is the layer that produces the final output
+    /// * `attached_layer` - The next layer in the network
     /// * `cost` - The cost or loss function associated with the
     /// training setup
     pub fn back_prop(&mut self, attached_layer: &Layer) {
@@ -136,17 +148,23 @@ impl Layer {
         self.back_prop_with_delta(&attached_delta);
     }
 
+    /// Computes current layer's delta values from attached layer's deltas
     /// 
-    pub fn back_prop_with_delta(&mut self, delta: &Array2<f64>) {
-        self.delta = self.activation_fn.prime(&self.activations) * delta;
-        self.drop_neurons();
+    /// # Arguments
+    /// 
+    /// * `attached_deltas` - Attached layer's deltas (assumed to have
+    /// already been computed)
+    pub fn back_prop_with_delta(&mut self, attached_delta: &Array2<f64>) {
+        self.delta = self.activation_fn.prime(&self.activations) * attached_delta;
+        self.drop_deltas();
     }
 
-    /// 
-    fn drop_neurons(&mut self) {
+    /// Remove deltas relative to which neurons have been dropped
+    /// during the latest training cycle
+    fn drop_deltas(&mut self) {
         match self.dropout {
             Some(_) => {
-                let zeros: Array1<f64> = Array1::zeros(self.delta.dim().1);
+                let zeros: Array1<f64> = Array1::zeros(self.delta.ncols());
                 for dropped_neuron in self.dropped_neurons.iter() {
                     self.delta.row_mut(*dropped_neuron).assign(&zeros);
                 }

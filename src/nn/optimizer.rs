@@ -26,7 +26,7 @@ pub trait Optimizer {
     fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>, input_rows: usize);
 }
 
-/// Stochastic Gradient Descent optimizer
+/// Stochastic Gradient Descent with momentum
 pub struct SGD {
     /// The step size when adjusting weights for each call of gradient descent
     learning_rate: f64,
@@ -56,20 +56,26 @@ impl SGD {
 impl Optimizer for SGD {
     fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>, input_rows: usize) {
         for (i, layer) in layers.iter_mut().enumerate() {
+            // Convert activation (z) deltas from initial back-prop run 
+            // into weight and bias deltas
             let delta_weights: Array2<f64> = self.learning_rate * deltas[i].dot(&layer.inputs.t());
             let delta_biases: Array2<f64> = self.learning_rate * &deltas[i];
 
+            // Create momentum vectors if they don't already exist
             if self.moments.len() <= i {
                 self.moments.push(Array2::zeros(delta_weights.dim()));
             }
 
+            // Apply momentum to weight deltas
             let moment: Array2<f64> = {
-                let prev_moment = self.moments[i].clone();
-                self.gamma * prev_moment + &delta_weights
+                let prev_moment: Array2<f64> = self.moments[i].clone();
+                (self.gamma * prev_moment) + &delta_weights
             };
 
+            // Apply deltas to layer
             layer.update(&moment, &delta_biases, input_rows);
-            self.moments[i] = moment;
+            // Save momentum for future passes
+            self.moments[i].assign(&moment);
         }
     }
 }
@@ -133,8 +139,8 @@ impl Optimizer for Adam {
                 (&self.moments[i] * self.gamma) + (&delta_weights * (1. - self.gamma));
 
             let velocity: Array2<f64> = {
-                let grad_squard = delta_weights.mapv(|el| el * el);
-                (&self.velocities[i] * self.beta) + (grad_squard * (1. - self.beta))
+                let grad_squared = delta_weights.mapv(|el| el * el);
+                (&self.velocities[i] * self.beta) + (grad_squared * (1. - self.beta))
             };
 
             self.moments[i].assign(&moment);

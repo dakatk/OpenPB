@@ -147,7 +147,7 @@ impl NetworkDataDe {
         let train_outputs: Array2<f64> = data_de.train_outputs;
 
         let mut network = Perceptron::new();
-        let input_shape: (usize, usize) = (train_inputs.dim().1, train_inputs.dim().0);
+        let input_shape: (usize, usize) = (train_inputs.ncols(), train_inputs.nrows());
         let mut input_shape: Option<(usize, usize)> = Some(input_shape);
 
         for layer in network_de.layers.iter() {

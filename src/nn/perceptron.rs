@@ -61,7 +61,7 @@ impl Perceptron {
     ) {
         let prev_layer: &mut Layer = self.layers.last_mut().unwrap();
         let prev_neurons: usize = prev_layer.neurons;
-        let prev_inputs: usize = prev_layer.inputs.dim().1;
+        let prev_inputs: usize = prev_layer.inputs.ncols();
 
         self.layers
             .push(Layer::new(neurons, (prev_neurons, prev_inputs), activation_fn, dropout));
@@ -95,12 +95,17 @@ impl Perceptron {
     ///
     /// # Arguments
     ///
-    /// * `inputs` - Set of all input vectors to train the Network on
-    /// * `outputs` - Set of corresponding output vectors
-    /// * `optimizer` - Optimization method used to perform perform gradient descent
+    /// * `training_set` - Set of all input and output vectors to train the network on
+    /// * `validation_set` - Set of all input and output vectors to validate if the
+    /// network has been sufficiently trained
+    /// * `optimizer` - Optimization method used when performing gradient descent
     /// * `metric` - Decides when the Network is performing 'good enough'
-    /// on the provided data
+    /// on the provided validation data
+    /// * `cost` - 
+    /// * `encoder` - 
     /// * `epochs` - Maximum number of training cycles
+    /// * `shuffle` - When 'true', training inputs are shuffled at the start of
+    /// each training cycle
     pub fn fit(
         &mut self,
         training_set: &(Array2<f64>, Array2<f64>),
@@ -127,7 +132,7 @@ impl Perceptron {
         // Encode training set output values to match 
         // the network's output format
         let expected: Array2<f64> = encoder.encode(training_outputs).t().to_owned();
-        let input_rows: usize = training_inputs.dim().0;
+        let input_rows: usize = training_inputs.nrows();
 
         for epoch in 1..=epochs {
             if shuffle {
@@ -155,11 +160,11 @@ impl Perceptron {
     }
 
     /// Performs the feedforward step for all Layers to return the
-    /// Network's prediction for a given input vector
+    /// network's prediction for a given input vector
     ///
     /// # Arguments
     ///
-    /// * `inputs` - Input vector
+    /// * `inputs` - Matrix of input vectors
     pub fn feed_forward(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
         let mut output: Array2<f64> = inputs.to_owned();
         for layer in self.layers.iter_mut() {
@@ -168,9 +173,12 @@ impl Perceptron {
         output
     }
 
+    /// Performs the backpropogation step for all layers to calculate
+    /// the appropriate deltas for the optimization step
+    /// 
     /// # Arguments
     /// 
-    /// * `deltas` - 
+    /// * `deltas` - Delta values matrix calculated from output layer
     pub fn back_prop(&mut self, delta: &Array2<f64>) {
         let mut attached_layer: Option<&Layer> = None;
         for layer in self.layers.iter_mut().rev() {
@@ -183,13 +191,13 @@ impl Perceptron {
     }
 
     /// Computes the network's prediction for a given input.
-    /// It is assumed that this function is called after the 
-    /// network has already been trained, therefore Dropout
-    /// Regularization is not taken into account
+    /// Assumes the network has already been trained, therefore 
+    /// Dropout Regularization is not taken into account
     ///
     /// # Arguments
     ///
-    /// * `inputs` - Input vector
+    /// * `inputs` - Matrix of input vectors
+    /// * `encoder` - Method for decoding output to readable values
     pub fn predict(&mut self, inputs: &Array2<f64>, encoder: &dyn Encoder) -> Array2<f64> {
         let mut output: Array2<f64> = inputs.to_owned();
         for layer in self.layers.iter_mut() {

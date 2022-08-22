@@ -48,7 +48,7 @@ pub struct Sigmoid;
 ///
 /// * `x` - Function input value
 fn sigmoid(x: f64) -> f64 {
-    1. / (1. + f64::exp(-x))
+    1.0 / (1.0 + f64::exp(-x))
 }
 
 /// Derivative of the Logistic Sigmoid function
@@ -57,7 +57,8 @@ fn sigmoid(x: f64) -> f64 {
 ///
 /// * `x` - Function input value
 fn sigmoid_prime(x: f64) -> f64 {
-    sigmoid(x) * (1. - sigmoid(x))
+    let sig: f64 = sigmoid(x);
+    sig * (1.0 - sig)
 }
 
 impl ActivationFn for Sigmoid {
@@ -81,10 +82,10 @@ pub struct ReLU;
 ///
 /// * `x` - Function input value
 fn relu(x: f64) -> f64 {
-    if x > 0. {
+    if x > 0.0 {
         x
     } else {
-        0.
+        0.0
     }
 }
 
@@ -94,10 +95,10 @@ fn relu(x: f64) -> f64 {
 ///
 /// * `x` - Function input value
 fn relu_prime(x: f64) -> f64 {
-    if x > 0. {
-        1.
+    if x > 0.0 {
+        1.0
     } else {
-        0.
+        0.0
     }
 }
 
@@ -111,7 +112,7 @@ impl ActivationFn for ReLU {
     }
 }
 
-/// Leaky Rectified Linear Unit activation function
+/// "Leaky" Rectified Linear Unit activation function
 #[derive(Clone)]
 pub struct LeakyReLU;
 
@@ -122,7 +123,7 @@ pub struct LeakyReLU;
 ///
 /// * `x` - Function input value
 fn leaky_relu(x: f64) -> f64 {
-    if x > 0. {
+    if x > 0.0 {
         x
     } else {
         0.01 * x
@@ -135,8 +136,8 @@ fn leaky_relu(x: f64) -> f64 {
 ///
 /// * `x` - Function input value
 fn leaky_relu_prime(x: f64) -> f64 {
-    if x > 0. {
-        1.
+    if x > 0.0 {
+        1.0
     } else {
         0.01
     }

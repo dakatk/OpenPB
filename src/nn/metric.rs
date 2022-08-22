@@ -1,6 +1,5 @@
 use ndarray::Array2;
-use serde_json::Map;
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 /// Defines a way to check how well our Network has fit te data so far.
 /// Used in the Network fit function to determine early stopping conditions

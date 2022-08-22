@@ -1,14 +1,15 @@
 // To generate docs for this project, run command:
 // cargo doc --open --no-deps --document-private-items
 mod nn;
-mod parse_json;
+mod file_io;
 
 use clap::{App, Arg, ArgMatches};
 use ndarray::Array2;
 use nn::perceptron::Perceptron;
 use nn::optimizer::Optimizer;
 use nn::metric::Metric;
-use parse_json::NetworkDataDe;
+use file_io::parse_json;
+use file_io::parse_json::NetworkDataDe;
 use std::fs;
 use std::io;
 use std::io::Write;
@@ -71,7 +72,7 @@ fn main() -> Result<(), String> {
     }
 }
 
-///
+/// Train network with deserailzed JSON data
 fn train_from_json(de_data: &mut NetworkDataDe, args: &ArgMatches) -> Result<(), String> {
     let now = SystemTime::now();
     let network: &mut Perceptron = &mut de_data.network;
@@ -117,12 +118,13 @@ fn train_from_json(de_data: &mut NetworkDataDe, args: &ArgMatches) -> Result<(),
     choose_to_save(&args, &network)
 }
 
-/// 
+/// Save network values to file
 fn choose_to_save(args: &ArgMatches, network: &Perceptron) -> Result<(), String> {
     if args.is_present("output") {
         let out_file = args.value_of("output").unwrap();
         parse_json::save_layer_values(network, out_file)
     } else {
+        // TODO Output to default file based on current datetime
         match user_input("\nSave internal values? (Y/N): ")
             .to_lowercase()
             .as_str()
@@ -136,7 +138,7 @@ fn choose_to_save(args: &ArgMatches, network: &Perceptron) -> Result<(), String>
     }
 }
 
-/// 
+#[deprecated]
 fn user_input(prompt: &'static str) -> String {
     let mut input = String::new();
     print!("{}", prompt);
