@@ -4,6 +4,7 @@ use ndarray::Array2;
 /// Wrapper for updating a network with any given 
 /// optimization function using online training
 pub fn optimize(optimizer: &mut dyn Optimizer, layers: &mut Vec<Layer>, input_rows: usize) {
+    // TODO Minibatch support?
     let deltas: Vec<Array2<f64>> = layers.iter().map(|l| l.delta.clone()).collect();
     optimizer.update(layers, &deltas, input_rows);
 }
@@ -74,7 +75,7 @@ impl Optimizer for SGD {
 
             // Apply deltas to layer
             layer.update(&moment, &delta_biases, input_rows);
-            // Save momentum for future passes
+            // Save momentum values for future passes
             self.moments[i].assign(&moment);
         }
     }
@@ -124,33 +125,42 @@ impl Optimizer for Adam {
         self.time_step += 1;
 
         for (i, layer) in layers.iter_mut().enumerate() {
+            // Convert activation (z) deltas from initial back-prop run 
+            // into weight and bias deltas
             let delta_weights: Array2<f64> = deltas[i].dot(&layer.inputs.t());
             let delta_biases: Array2<f64> = self.learning_rate * &deltas[i];
 
+            // Create velocity vectors if they don't already exist
             if self.velocities.len() <= i {
                 self.velocities.push(Array2::zeros(delta_weights.dim()));
             }
 
+            // Create momentum vectors if they don't already exist
             if self.moments.len() <= i {
                 self.moments.push(Array2::zeros(delta_weights.dim()));
             }
 
+            // Initial momentum calculation 
             let moment: Array2<f64> =
                 (&self.moments[i] * self.gamma) + (&delta_weights * (1. - self.gamma));
 
+            // Initial velocity calculation
             let velocity: Array2<f64> = {
                 let grad_squared = delta_weights.mapv(|el| el * el);
                 (&self.velocities[i] * self.beta) + (grad_squared * (1. - self.beta))
             };
 
+            // Save momentum and velocity values for future passes
             self.moments[i].assign(&moment);
             self.velocities[i].assign(&velocity);
 
+            // Adjust momentum inversely relative to the number of training cycles
             let moment_bar: Array2<f64> = {
                 let beta1_t = 1. - self.gamma.powi(self.time_step as i32);
                 self.moments[i].mapv(|el| el / beta1_t)
             };
 
+            // Adjust velocity inversely relative to the number of training cycles
             let velocity_sqrt: Array2<f64> = {
                 let beta2_t = 1. - self.beta.powi(self.time_step as i32);
                 let velocity_bar: Array2<f64> = self.velocities[i].mapv(|el| el / beta2_t);
@@ -158,6 +168,7 @@ impl Optimizer for Adam {
                 velocity_bar.mapv(|el| f64::sqrt(el) + 1e-7)
             };
 
+            // Calculate final momentum w.r.t. velocity
             let moment_adj: Array2<f64> = (moment_bar * self.learning_rate) / velocity_sqrt;
             layer.update(&moment_adj, &delta_biases, input_rows)
         }
