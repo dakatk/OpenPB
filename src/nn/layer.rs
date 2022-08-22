@@ -48,19 +48,19 @@ impl Layer {
     /// * `activation_fn` - Function that determines the activation of individual neurons
     pub fn new(
         neurons: usize,
-        inputs: usize,
+        input_shape: (usize, usize),
         activation_fn: Box<dyn ActivationFn>,
         dropout: Option<f32>
     ) -> Layer {
-        let weights: Array2<f64> = Array2::random((neurons, inputs), Uniform::new(0., 1.));
-        let weights: Array2<f64> = weights / f64::sqrt(inputs as f64);
+        let weights: Array2<f64> = Array2::random((neurons, input_shape.0), Uniform::new(0., 1.));
+        let weights: Array2<f64> = weights / f64::sqrt(input_shape.0 as f64);
 
         let biases: Array2<f64> = Array2::random((neurons, 1), Uniform::new(0., 1.));
 
-        let inputs: Array2<f64> = Array2::zeros((inputs, 1));
-        let activations: Array2<f64> = Array2::zeros((neurons, 1));
+        let activations: Array2<f64> = Array2::zeros((neurons, input_shape.1));
+        let delta: Array2<f64> = Array2::zeros((neurons, input_shape.1));
+        let inputs: Array2<f64> = Array2::zeros(input_shape);
 
-        let delta: Array2<f64> = Array2::zeros((neurons, 1));
         let dropped_neurons: Vec<usize> = vec![];
 
         Layer {
@@ -83,11 +83,10 @@ impl Layer {
     /// * `inputs` - Input vector to calculate activation values
     pub fn feed_forward(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
+        let output: Array2<f64> = self.activation_fn.call(&activations);
 
         self.inputs.assign(inputs);
         self.activations.assign(&activations);
-
-        let output: Array2<f64> = self.activation_fn.call(&activations);
 
         match self.dropout {
             Some(dropout) => {
@@ -100,10 +99,12 @@ impl Layer {
 
     pub fn feed_forward_no_dropout(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
+        let output: Array2<f64> = self.activation_fn.call(&activations);
 
         self.inputs.assign(inputs);
         self.activations.assign(&activations);
-        self.activation_fn.call(&activations)
+
+        output
     }
 
     fn map_output_with_dropout(
@@ -139,41 +140,17 @@ impl Layer {
     /// * `cost` - The cost or loss function associated with the
     /// training setup
     pub fn back_prop(&mut self, attached_layer: &Layer) {
-        let attached_delta = attached_layer.weights.t().dot(&attached_layer.delta);
+        let attached_delta: Array2<f64> = attached_layer.weights.t().dot(&attached_layer.delta);
         self.back_prop_with_delta(&attached_delta);
     }
-    // pub fn back_prop(
-    //     &mut self,
-    //     actual: &Array2<f64>,
-    //     target: &Array2<f64>,
-    //     attached_layer: Option<Layer>,
-    //     cost: Box<dyn Cost>
-    // ) {
-    //     let attached_delta: Array2<f64>;
 
-    //     match attached_layer {
-    //         Some(layer) => attached_delta = layer.weights.t().dot(&layer.delta),
-    //         _ => attached_delta = cost.prime(&actual, &target)
-    //     };
-
-    //     self.delta = self.activation_fn.prime(&self.activations) * &attached_delta;
-
-    //     match self.dropout {
-    //         Some(_) => {
-    //             let zeros = Array::zeros(1);
-    //             for dropped_neuron in self.dropped_neurons.iter() {
-    //                 self.delta.row_mut(*dropped_neuron).assign(&zeros);
-    //             }
-    //         }
-    //         None => ()
-    //     }
-    // }
-
+    /// 
     pub fn back_prop_with_delta(&mut self, delta: &Array2<f64>) {
         self.delta = self.activation_fn.prime(&self.activations) * delta;
-        self.drop_neurons();
+        // self.drop_neurons();
     }
 
+    // FIXME
     fn drop_neurons(&mut self) {
         match self.dropout {
             Some(_) => {
@@ -192,7 +169,10 @@ impl Layer {
     ///
     /// * `delta_weights` - Change in the weight values
     /// * `delta_biases` - Change in the bias values
-    pub fn update(&mut self, delta_weights: &Array2<f64>, delta_biases: &Array2<f64>) {
+    pub fn update(&mut self, delta_weights: &Array2<f64>, delta_biases: &Array2<f64>, input_rows: usize) {
+        let delta_weights: Array2<f64> = delta_weights / (input_rows as f64);
+        let delta_biases: f64 = delta_biases.sum() / (input_rows as f64);
+
         let weights: Array2<f64> = &self.weights - delta_weights;
         let biases: Array2<f64> = &self.biases - delta_biases;
 

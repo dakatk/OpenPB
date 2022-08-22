@@ -37,6 +37,6 @@ pub struct MSE;
 
 impl Cost for MSE {
     fn prime(&self, o: &Array2<f64>, y: &Array2<f64>) -> Array2<f64> {
-        2.0 * (o - y)
+        o - y
     }
 }

@@ -2,81 +2,15 @@ use super::layer::Layer;
 use ndarray::Array2;
 
 /// Wrapper for updating a network with any given 
-/// optimization function using either batch or
-/// online training
-/// 
-/// * `batch_deltas` - Accumulated deltas for each layer 
-/// during batch training
-/// * `curr_batch` - Counter that keeps track of how many 
-/// batches have been accumulated
-pub struct Optimize {
-    batch_deltas: Vec<Array2<f64>>,
-    curr_batch: usize
-}
+/// optimization function using online training
+pub struct Optimize {}
 
 impl Optimize {
-    pub fn new() -> Self {
-        Self {
-            batch_deltas: vec![],
-            curr_batch: 0
-        }
-    }
-
-    /// Runs the 'update' function of the given Optimizer through
-    /// using either batch or online training methods
-    /// 
-    /// * `optimizer` - Optimization function (e.g. SGD)
-    /// * `layers` - Layers from the network that is being trained
-    /// * `batch_size` - If Some(), then batch updates are
-    /// applied with the given batch size. If None, then online
-    /// updates are used instead
-    pub fn update(
-        &mut self,
-        optimizer: &mut dyn Optimizer,
-        layers: &mut Vec<Layer>,
-        batch_size: Option<usize>
-    ) {
-        match batch_size {
-            Some(batch_size) => self.update_batch(optimizer, layers, batch_size),
-            None => self.update_online(optimizer, layers)
-        }
-    }
-
-    /// Batch training
-    fn update_batch(
-        &mut self,
-        optimizer: &mut dyn Optimizer,
-        layers: &mut Vec<Layer>,
-        batch_size: usize
-    ) {
-        self.curr_batch += 1;
-
-        for (i, layer) in layers.iter().enumerate() {
-            if self.batch_deltas.len() <= i {
-                self.batch_deltas.push(layer.delta.clone())
-            } else if self.curr_batch == 1 {
-                self.batch_deltas[i].assign(&layer.delta);
-            } else {
-                self.batch_deltas[i] += &layer.delta;
-            }
-        }
-
-        if self.curr_batch >= batch_size {
-            self.curr_batch = 0;
-
-            let deltas: Vec<Array2<f64>> = self
-                .batch_deltas
-                .iter()
-                .map(|d| d / (batch_size as f64))
-                .collect();
-            optimizer.update(layers, &deltas);
-        }
-    }
-
     /// Online training
-    fn update_online(&mut self, optimizer: &mut dyn Optimizer, layers: &mut Vec<Layer>) {
+    pub fn update(&mut self, optimizer: &mut dyn Optimizer, layers: &mut Vec<Layer>, input_rows: usize) {
+        // TODO Shuffle option?
         let deltas: Vec<Array2<f64>> = layers.iter().map(|l| l.delta.clone()).collect();
-        optimizer.update(layers, &deltas);
+        optimizer.update(layers, &deltas, input_rows);
     }
 }
 
@@ -95,7 +29,7 @@ pub trait Optimizer {
     /// # Arguments
     ///
     /// * `layers` - Layers of the network to apply gradient descent to
-    fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>);
+    fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>, input_rows: usize);
 }
 
 /// Stochastic Gradient Descent optimizer
@@ -115,6 +49,7 @@ impl SGD {
     /// # Arguments
     ///
     /// * `learning_rate` - The step size when adjusting weights during gradient descent
+    #[allow(dead_code)]
     pub fn new(learning_rate: f64, gamma: f64) -> SGD {
         SGD {
             learning_rate,
@@ -125,7 +60,7 @@ impl SGD {
 }
 
 impl Optimizer for SGD {
-    fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>) {
+    fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>, input_rows: usize) {
         for (i, layer) in layers.iter_mut().enumerate() {
             let delta_weights: Array2<f64> = self.learning_rate * deltas[i].dot(&layer.inputs.t());
             let delta_biases: Array2<f64> = self.learning_rate * &deltas[i];
@@ -139,7 +74,7 @@ impl Optimizer for SGD {
                 self.gamma * prev_moment + &delta_weights
             };
 
-            layer.update(&moment, &delta_biases);
+            layer.update(&moment, &delta_biases, input_rows);
             self.moments[i] = moment;
         }
     }
@@ -185,7 +120,7 @@ impl Adam {
 }
 
 impl Optimizer for Adam {
-    fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>) {
+    fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>, input_rows: usize) {
         self.time_step += 1;
 
         for (i, layer) in layers.iter_mut().enumerate() {
@@ -224,7 +159,7 @@ impl Optimizer for Adam {
             };
 
             let moment_adj: Array2<f64> = (moment_bar * self.learning_rate) / velocity_sqrt;
-            layer.update(&moment_adj, &delta_biases)
+            layer.update(&moment_adj, &delta_biases, input_rows)
         }
     }
 }

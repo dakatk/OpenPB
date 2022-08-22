@@ -14,26 +14,31 @@ pub trait Metric {
     fn call(&self, o: &Array2<f64>, y: &Array2<f64>) -> bool;
 }
 
-/// Metric that is satisfied when all values are accurate
-/// to a certain number of decimal places
+/// Metric that is satisfied when a certain percentage
+/// of all expected and actual output values are equal
 pub struct Accuracy {
-    /// Tolerance for representing the "approximately equal to" factor
-    epsilon: f64
+    /// 
+    min: f64
 }
 
 impl Accuracy {
-    /// # Arguments
-    ///
-    /// * `epsilon` - The delta for used to check accuracy
-    /// between two values
-    pub fn new(params: &Map<String, Value>) -> Accuracy {
-        let epsilon: f64 = params["epsilon"].as_f64().unwrap_or_default();
-        Accuracy { epsilon }
+    /// 
+    pub fn new(params: &Map<String, Value>) -> Self {
+        let min: f64 = params["min"].as_f64().unwrap_or(1.0);
+        Self { min }
     }
 }
 
 impl Metric for Accuracy {
     fn call(&self, o: &Array2<f64>, y: &Array2<f64>) -> bool {
-        o.abs_diff_eq(y, self.epsilon)
+        let equality: Vec<usize> = o.iter()
+            .zip(y)
+            .map(
+                |a: (&f64, &f64)| 
+                (a.0 == a.1) as usize
+            ).collect();
+        let len = equality.len() as f64;
+        let sum = equality.into_iter().sum::<usize>() as f64;
+        (sum / len) >= self.min
     }
 }

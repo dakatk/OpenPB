@@ -1,25 +1,26 @@
 use super::activation::ActivationFn;
 use super::cost::Cost;
+use super::encoder::Encoder;
 use super::layer::Layer;
 use super::metric::Metric;
 use super::optimizer::{Optimize, Optimizer};
 use ndarray::Array2;
-use rand::prelude::*;
-use rand::seq::SliceRandom;
+// use rand::prelude::*;
+// use rand::seq::SliceRandom;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-pub struct Network {
+pub struct Perceptron {
     /// Input, hidden, and output layers. Each layer is considered
     /// to be 'connected' to the next one in the list
     layers: Vec<Layer>
 }
 
-impl Network {
+impl Perceptron {
     /// # Arguments:
     ///
     /// * `cost` - Loss function for error reporting/backprop
-    pub fn new() -> Network {
-        Network {
+    pub fn new() -> Perceptron {
+        Perceptron {
             layers: vec![]
         }
     }
@@ -36,12 +37,12 @@ impl Network {
     fn add_input_layer(
         &mut self,
         neurons: usize,
-        inputs: usize,
+        input_shape: (usize, usize),
         activation_fn: Box<dyn ActivationFn>,
         dropout: Option<f32>
     ) {
         self.layers
-            .push(Layer::new(neurons, inputs, activation_fn, dropout));
+            .push(Layer::new(neurons, input_shape, activation_fn, dropout));
     }
 
     /// Same as `add_input_layer`, but used for any other layer after. The number of
@@ -58,9 +59,12 @@ impl Network {
         activation_fn: Box<dyn ActivationFn>,
         dropout: Option<f32>
     ) {
-        let prev_neurons = self.layers.last_mut().unwrap().neurons;
+        let prev_layer: &mut Layer = self.layers.last_mut().unwrap();
+        let prev_neurons: usize = prev_layer.neurons;
+        let prev_inputs: usize = prev_layer.inputs.dim().1;
+
         self.layers
-            .push(Layer::new(neurons, prev_neurons, activation_fn, dropout));
+            .push(Layer::new(neurons, (prev_neurons, prev_inputs), activation_fn, dropout));
     }
 
     /// Add a Layer to the next open spot in the Network's structure. This function
@@ -75,12 +79,12 @@ impl Network {
     pub fn add_layer(
         &mut self,
         neurons: usize,
-        inputs: Option<usize>,
+        input_shape: Option<(usize, usize)>,
         activation_fn: Box<dyn ActivationFn>,
         dropout: Option<f32>
     ) {
-        match inputs {
-            Some(inputs) => self.add_input_layer(neurons, inputs, activation_fn, dropout),
+        match input_shape {
+            Some(input_shape) => self.add_input_layer(neurons, input_shape, activation_fn, dropout),
             _ => self.add_hidden_layer(neurons, activation_fn, dropout)
         }
     }
@@ -99,49 +103,38 @@ impl Network {
     /// * `epochs` - Maximum number of training cycles
     pub fn fit(
         &mut self,
-        inputs: &[Array2<f64>],
-        outputs: &[Array2<f64>],
+        inputs: &Array2<f64>,
+        outputs: &Array2<f64>,
         optimizer: &mut dyn Optimizer,
         metric: &dyn Metric,
         cost: &dyn Cost,
-        epochs: u64,
-        batch_size: Option<usize>
-    ) -> Vec<Array2<f64>> {
-        let mut optimize = Optimize::new();
-        let mut rng = thread_rng();
+        encoder: &dyn Encoder,
+        epochs: u64
+
+    ) {
+        let mut optimize = Optimize {};
+        let mut last_epoch = epochs;
+
+        let expected: Array2<f64> = encoder.encode(&outputs).t().to_owned();
+        let input_rows: usize = inputs.dim().0;
+
         for epoch in 1..=epochs {
-            let mut early_stop = true;
-            let mut samples: Vec<usize> = (0..inputs.len()).collect();
+            // TODO Predict from validation data instead of training data
+            let prediction: Array2<f64> = self.predict(&inputs, encoder);
+            let early_stop: bool = metric.call(&prediction, &outputs);
 
-            samples.shuffle(&mut rng);
-            for sample in samples {
-                let network_prediction: Array2<f64> = self.predict(&inputs[sample]);
-                if !metric.call(&network_prediction, &outputs[sample]) {
-                    early_stop = false;
-                }
+            let actual: Array2<f64> = self.feed_forward(&inputs);
+            let delta: Array2<f64> = cost.prime(&actual, &expected);
+            self.back_prop(&delta);
 
-                let network_output: Array2<f64> = self.feed_forward(&inputs[sample]);
-                let delta = cost.prime(&network_output,&outputs[sample]);
-
-                self.back_prop(&delta);
-                optimize.update(optimizer, &mut self.layers, batch_size);
-            }
+            optimize.update(optimizer, &mut self.layers, input_rows);
 
             if early_stop {
-                println!("Training ended on epoch {}", epoch);
+                last_epoch = epoch;
                 break;
             }
         }
-
-        let mut errors: Vec<Array2<f64>> = vec![];
-        for (input, output) in inputs.iter().zip(outputs) {
-            let error = {
-                let network_output = self.predict(input);
-                cost.prime(&network_output, output)
-            };
-            errors.push(error);
-        }
-        errors
+        println!("Training ended on epoch {}\n", last_epoch);
     }
 
     /// Performs the feedforward step for all Layers to return the
@@ -180,21 +173,21 @@ impl Network {
     /// # Arguments
     ///
     /// * `inputs` - Input vector
-    pub fn predict(&mut self, inputs: &Array2<f64>) -> Array2<f64> {
+    pub fn predict(&mut self, inputs: &Array2<f64>, encoder: &dyn Encoder) -> Array2<f64> {
         let mut output: Array2<f64> = inputs.to_owned();
         for layer in self.layers.iter_mut() {
             output = layer.feed_forward_no_dropout(&output);
         }
-        output
+        encoder.decode(&output)
     }
 }
 
-impl Serialize for Network {
+impl Serialize for Perceptron {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer
     {
-        let mut s = serializer.serialize_struct("Network", 1)?;
+        let mut s = serializer.serialize_struct("Perceptron", 1)?;
         s.serialize_field("layers", &self.layers)?;
         s.end()
     }

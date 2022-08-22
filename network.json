@@ -17,14 +17,19 @@
     ],
     "optimizer": {
         "name": "sgd",
-        "learning_rate": 0.05
+        "learning_rate": 0.01
+    },
+    "encoder": {
+        "name": "one_hot",
+        "args": {
+            "max": 3
+        }
     },
     "metric": {
         "name": "accuracy",
         "args": {
-            "epsilon": 0.2
+            "min": 1.0
         }
     },
-    "epochs": 10000,
-    "batch_size": 2
+    "epochs": 10000
 }
