@@ -6,10 +6,18 @@ use serde_json::{Map, Value};
 pub trait Encoder {
     /// Encodes human-readable values to the same
     /// format as the raw network output
+    ///
+    /// # Arguments
+    ///
+    /// * `y` - Human-readable (decoded) output vectors
     fn encode(&self, y: &Array2<f64>) -> Array2<f64>;
 
     /// Decodes the raw network output into
     /// human-readable values
+    ///
+    /// # Arguments
+    ///
+    /// * `y` - Raw (encoded) network output vectors
     fn decode(&self, y: &Array2<f64>) -> Array2<f64>;
 }
 

@@ -8,9 +8,6 @@ use crate::nn::perceptron::Perceptron;
 use ndarray::Array2;
 use serde::Deserialize;
 use serde_json::{Map, Value};
-use std::fs::File;
-use std::io::prelude::*;
-use std::path::Path;
 
 /// Deserialized values representing both input and output data in JSON
 #[derive(Deserialize, Debug)]
@@ -252,30 +249,5 @@ fn optimizer_from_str(optimizer_de: OptimizerDe) -> Option<Box<dyn Optimizer>> {
             beta2,
         ))),
         _ => None,
-    }
-}
-
-/// Save internal values (weights and biases) from each layer of a network
-///
-/// # Arguments
-///
-/// * `network` - Network object to be serialized
-/// * `filename` - JSON file to write serialized values to
-pub fn save_layer_values(network: &Perceptron, filename: &str) -> Result<(), String> {
-    println!("\nAttempting to write to {}...", filename);
-
-    let mut file = match File::create(&Path::new(filename)) {
-        Ok(file) => file,
-        Err(msg) => return Err(format!("Failed to create file {}: {}", filename, msg)),
-    };
-
-    let network_ser = serde_json::to_string_pretty(&network).unwrap();
-
-    match file.write_all(network_ser.as_bytes()) {
-        Ok(_) => {
-            println!("Success!");
-            Ok(())
-        }
-        Err(msg) => Err(msg.to_string()),
     }
 }

@@ -4,18 +4,15 @@ mod file_io;
 mod nn;
 
 use clap::{App, Arg, ArgMatches};
-use file_io::parse_json;
 use file_io::parse_json::NetworkDataDe;
+use file_io::save_output;
 use ndarray::Array2;
 use nn::metric::Metric;
 use nn::optimizer::Optimizer;
 use nn::perceptron::Perceptron;
 use std::fs;
-use std::io;
-use std::io::Write;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
-// TODO Documentation (for everything else)
 #[doc(hidden)]
 fn main() -> Result<(), String> {
     let args: ArgMatches = App::new("Open Neural Network Benchmarker (ONNB)")
@@ -53,31 +50,28 @@ fn main() -> Result<(), String> {
     let network_filename: &str = args.value_of("network").unwrap();
     let data_filename: &str = args.value_of("data").unwrap();
 
-    let network_contents: String;
-    let data_contents: String;
-
-    match fs::read_to_string(&network_filename) {
-        Ok(result) => network_contents = result,
-        _ => return Err(format!("'{}' missing or corrupted", network_filename)),
+    let network_json = match fs::read_to_string(&network_filename) {
+        Ok(result) => result,
+        _ => return Err(format!("File {network_filename} missing or corrupted")),
+    };
+    let data_json = match fs::read_to_string(&data_filename) {
+        Ok(result) => result,
+        _ => return Err(format!("File {data_filename} missing or corrupted")),
     };
 
-    match fs::read_to_string(&data_filename) {
-        Ok(result) => data_contents = result,
-        _ => return Err(format!("'{}' missing or corrupted", data_filename)),
-    };
-
-    match NetworkDataDe::from_json(&data_contents, &network_contents) {
+    match NetworkDataDe::from_json(&data_json, &network_json) {
         Ok(mut result) => train_from_json(&mut result, &args),
-        Err(msg) => Err(msg.to_string()),
+        Err(error) => Err(error.to_string()),
     }
 }
 
 /// Train network with deserailzed JSON data
 fn train_from_json(de_data: &mut NetworkDataDe, args: &ArgMatches) -> Result<(), String> {
-    let now = SystemTime::now();
+    let now: SystemTime = SystemTime::now();
     let network: &mut Perceptron = &mut de_data.network;
+    
+    println!("Network initialized, tarting training cycle...\n");
 
-    println!("Network successfully created\nStarting training cycle...\n");
     let optimizer: &mut dyn Optimizer = de_data.optimizer.as_mut();
     let metric: &dyn Metric = de_data.metric.as_ref();
 
@@ -90,6 +84,7 @@ fn train_from_json(de_data: &mut NetworkDataDe, args: &ArgMatches) -> Result<(),
         de_data.test_outputs.to_owned(),
     );
 
+    // TODO Multi-threading (train and save data per thread)
     network.fit(
         &training_set,
         &validation_set,
@@ -101,60 +96,20 @@ fn train_from_json(de_data: &mut NetworkDataDe, args: &ArgMatches) -> Result<(),
         false,
     );
 
-    // TODO Better output formatting (maybe CSV?)
-    // TODO Multi-threading (save training data per thread)
-    let elapsed: Duration = now.elapsed().unwrap();
-    println!("Finished after {} seconds\n", elapsed.as_secs_f32());
+    let elapsed: f32 = now.elapsed().unwrap().as_secs_f32();
+    println!("Finished after {elapsed} seconds\n");
 
     let prediction: Array2<f64> = network.predict(&validation_set.0, de_data.encoder.as_ref());
-
-    let metric_check: bool = metric.check(&prediction, &validation_set.1);
-    let metric_value: f64 = metric.value(&prediction, &validation_set.1);
+    let expected: &Array2<f64> = &validation_set.1;
 
     println!(
         "{}: {} (passed: {})\n",
         metric.label(),
-        metric_check,
-        metric_value
+        metric.check(&prediction, expected),
+        metric.value(&prediction, expected)
     );
-    println!("Final prediction for validation set:\n{}\n", prediction);
-    println!(
-        "Expected outputs from validation set:\n{}\n",
-        &validation_set.1
-    );
+    println!("Final prediction for validation set:\n{prediction}\n");
+    println!("Expected outputs from validation set:\n{expected}\n");
 
-    choose_to_save(&args, &network)
-}
-
-/// Save network values to file
-fn choose_to_save(args: &ArgMatches, network: &Perceptron) -> Result<(), String> {
-    if args.is_present("output") {
-        let out_file = args.value_of("output").unwrap();
-        parse_json::save_layer_values(network, out_file)
-    } else {
-        // TODO Output to default file based on current datetime
-        match user_input("\nSave internal values? (Y/N): ")
-            .to_lowercase()
-            .as_str()
-        {
-            "y" | "yes" => {
-                let out_file: String = user_input("Filename: ");
-                parse_json::save_layer_values(network, &out_file.as_str())
-            }
-            _ => Ok(()),
-        }
-    }
-}
-
-#[deprecated]
-fn user_input(prompt: &'static str) -> String {
-    let mut input = String::new();
-    print!("{}", prompt);
-
-    io::stdout().flush().expect("Error: failed to flush stdout");
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Error: unable to read user input");
-
-    input.trim().to_string()
+    save_output::save_to_dir(&args, &network)
 }

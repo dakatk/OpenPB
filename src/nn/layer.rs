@@ -53,11 +53,18 @@ impl Layer {
         activation_fn: Box<dyn ActivationFn>,
         dropout: Option<f32>,
     ) -> Layer {
-        let weights: Array2<f64> = Array2::random((neurons, input_shape.0), Uniform::new(0., 1.));
-        let weights: Array2<f64> = weights / f64::sqrt(input_shape.0 as f64);
+        // Weights and biases are initialized randomly 
+        // in the range [-0.5, 0.5)
+        let distribution: Uniform<f64> = Uniform::new(-0.5, 0.5);
 
-        let biases: Array2<f64> = Array2::random((neurons, 1), Uniform::new(0., 1.));
+        let weights: Array2<f64> = Array2::random((neurons, input_shape.0), distribution);
+        // Scaling the weights by the sqrt of the number of nodes
+        // helps to reduce the problem of disappearing gradient
+        let weights: Array2<f64> = weights / f64::sqrt(input_shape.1 as f64);
 
+        let biases: Array2<f64> = Array2::random((neurons, 1), distribution);
+
+        // Stored values are all initialized to zero
         let activations: Array2<f64> = Array2::zeros((neurons, input_shape.1));
         let delta: Array2<f64> = Array2::zeros((neurons, input_shape.1));
         let inputs: Array2<f64> = Array2::zeros(input_shape);
