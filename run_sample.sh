@@ -1,1 +1,1 @@
-cargo run --release -- -d sample_data.json -n sample_network.json -t 2
+cargo run --release -- -d sample_data.json -n sample_network.json -t 4

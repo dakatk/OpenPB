@@ -1,2 +1,3 @@
 # Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-cargo run --release -- -d sample_data.json -n sample_network.json -t 1
+# $env:RUST_BACKTRACE=1
+cargo run --release -- -d sample_data.json -n sample_network.json -t 4

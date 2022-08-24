@@ -10,6 +10,7 @@ use clap::ArgMatches;
 use ndarray::Array2;
 use std::thread::{self, JoinHandle};
 use std::time::SystemTime;
+use std::usize;
 
 const DEFAULT_THREADS: usize = 1;
 
@@ -21,14 +22,15 @@ const DEFAULT_THREADS: usize = 1;
 /// * `arg` - 
 pub fn train_from_json(de_data: &NetworkDataDe, args: &ArgMatches) -> Result<(), String> {
     let total_threads: usize = *args.get_one("threads").unwrap_or(&DEFAULT_THREADS);
+    let shuffle: bool = *args.get_one("shuffle").unwrap_or(&false);
 
     let mut training_threads: Vec<JoinHandle<TrainingResultsSer>> = vec![];
     let mut all_results: Vec<TrainingResultsSer> = vec![];
 
     // Create training threads
-    for i in 0..total_threads {
-        // TODO This is inefficient...
-        training_threads.push(train_single_thread(i, de_data.clone(), false));
+    for id in 0..total_threads {
+        // TODO The use of 'clone()' here is inefficient...
+        training_threads.push(train_single_thread(id, de_data.clone(), shuffle));
     }
 
     // Wait for each training thread to finish, then add the data
@@ -103,7 +105,7 @@ fn train_single_thread(
 
         // Metric values
         let metric_label: String = metric.label().to_string();
-        let metric_value: f64 = metric.value(&predicted_output, validation_inputs);
+        let metric_value: f64 = metric.value(&predicted_output, validation_outputs);
         let metric_passed: bool = metric.check(&predicted_output, validation_outputs);
 
         TrainingResultsSer::new(

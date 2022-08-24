@@ -49,7 +49,7 @@ fn save_layer_values(threaded_results: ThreadedResultsSer, filepath: &Path) -> R
             ))
         }
     };
-    // TODO Save values in CSV/Excel format + add other relevant data
+    
     let network_ser = serde_json::to_string_pretty(&threaded_results).unwrap();
     match file.write_all(network_ser.as_bytes()) {
         Ok(_) => {

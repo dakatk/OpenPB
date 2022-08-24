@@ -6,7 +6,7 @@ mod trainer;
 
 use file_io::parse_json::NetworkDataDe;
 use trainer::train_from_json;
-use clap::{App, Arg, ArgMatches};
+use clap::{value_parser, App, Arg, ArgMatches};
 use std::fs;
 
 #[doc(hidden)]
@@ -21,7 +21,7 @@ fn main() -> Result<(), String> {
                 .takes_value(true)
                 .value_name("JSON_FILE")
                 .required(true)
-                .help("JSON file with training and validation sets"),
+                .help("JSON file with training and validation sets (required)"),
         )
         .arg(
             Arg::with_name("network")
@@ -30,7 +30,7 @@ fn main() -> Result<(), String> {
                 .takes_value(true)
                 .value_name("JSON_FILE")
                 .required(true)
-                .help("JSON file with network structure and hyperparameters"),
+                .help("JSON file with network structure and hyperparameters (required)"),
         )
         .arg(
             Arg::with_name("output")
@@ -39,16 +39,27 @@ fn main() -> Result<(), String> {
                 .takes_value(true)
                 .value_name("JSON_FILE")
                 .required(false)
-                .help("JSON file where training results are stored"),
+                .help("JSON file where training results are stored (optional)"),
         )
         .arg(
             Arg::with_name("threads")
                 .short('t')
                 .long("threads")
+                .value_parser(value_parser!(usize))
                 .takes_value(true)
                 .value_name("NUMBER_OF_THREADS")
                 .required(false)
                 .help("Number of threads spawned to train multiple smaple of the same network setup (optional)")
+        )
+        .arg(
+            Arg::with_name("shuffle")
+                .short('s')
+                .long("shuffle")
+                .value_parser(value_parser!(bool))
+                .takes_value(true)
+                .value_name("SHUFFLE")
+                .required(false)
+                .help("Flag that indicates whether or not to shuffle training data during each cycle (optional)")
         )
         .get_matches();
 
