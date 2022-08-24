@@ -1,10 +1,10 @@
 use crate::file_io::parse_json::NetworkDataDe;
 use crate::file_io::results_ser::{TrainingResultsSer, ThreadedResultsSer};
 use crate::file_io::save_output;
-use crate::nn::cost::Cost;
-use crate::nn::encoder::Encoder;
-use crate::nn::metric::Metric;
-use crate::nn::optimizer::Optimizer;
+use crate::nn::functions::cost::Cost;
+use crate::nn::functions::encoder::Encoder;
+use crate::nn::functions::metric::Metric;
+use crate::nn::functions::optimizer::Optimizer;
 use crate::nn::perceptron::Perceptron;
 use clap::ArgMatches;
 use ndarray::Array2;

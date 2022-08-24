@@ -1,3 +1,4 @@
+use crate::dyn_clone;
 use ndarray::Array2;
 
 /// Neuron activation function used for feed forward
@@ -17,26 +18,7 @@ pub trait ActivationFn: DynClone + Sync + Send {
     /// * `x` - Row vector of input values
     fn prime(&self, x: &Array2<f64>) -> Array2<f64>;
 }
-
-pub trait DynClone {
-    /// Create a clone of a boxed instance of a trait
-    fn clone_box(&self) -> Box<dyn ActivationFn>;
-}
-
-impl<T> DynClone for T
-where
-    T: 'static + ActivationFn + Clone,
-{
-    fn clone_box(&self) -> Box<dyn ActivationFn> {
-        Box::new(self.clone())
-    }
-}
-
-impl Clone for Box<dyn ActivationFn> {
-    fn clone(&self) -> Box<dyn ActivationFn> {
-        self.clone_box()
-    }
-}
+dyn_clone!(ActivationFn);
 
 /// Logistic Sigmoid activation function
 #[derive(Clone)]

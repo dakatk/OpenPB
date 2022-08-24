@@ -1,3 +1,4 @@
+use crate::dyn_clone;
 use ndarray::{Array2, Axis};
 use ndarray_stats::QuantileExt;
 use serde_json::{Map, Value};
@@ -20,6 +21,7 @@ pub trait Encoder: DynClone + Sync + Send {
     /// * `y` - Raw (encoded) network output vectors
     fn decode(&self, y: &Array2<f64>) -> Array2<f64>;
 }
+dyn_clone!(Encoder);
 
 /// One-hot encoding: converts integers to 1d arrays
 /// where every index is a 0 except for the index
@@ -66,25 +68,5 @@ impl Encoder for OneHot {
             decoded[i] = [argmax];
         }
         Array2::from(decoded)
-    }
-}
-
-pub trait DynClone {
-    /// Create a clone of a boxed instance of a trait
-    fn clone_box(&self) -> Box<dyn Encoder>;
-}
-
-impl<T> DynClone for T
-where
-    T: 'static + Encoder + Clone,
-{
-    fn clone_box(&self) -> Box<dyn Encoder> {
-        Box::new(self.clone())
-    }
-}
-
-impl Clone for Box<dyn Encoder> {
-    fn clone(&self) -> Box<dyn Encoder> {
-        self.clone_box()
     }
 }

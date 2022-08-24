@@ -1,3 +1,4 @@
+use crate::dyn_clone;
 use ndarray::Array2;
 use serde_json::{Map, Value};
 
@@ -18,6 +19,7 @@ pub trait Metric: DynClone + Sync + Send {
     /// * `y` - Expected values
     fn check(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> bool;
 }
+dyn_clone!(Metric);
 
 /// Metric that is satisfied when a certain percentage
 /// of all expected and actual output values are equal
@@ -53,25 +55,5 @@ impl Metric for Accuracy {
 
     fn check(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> bool {
         self.value(actual, expected) >= self.min
-    }
-}
-
-pub trait DynClone {
-    /// Create a clone of a boxed instance of a trait
-    fn clone_box(&self) -> Box<dyn Metric>;
-}
-
-impl<T> DynClone for T
-where
-    T: 'static + Metric + Clone,
-{
-    fn clone_box(&self) -> Box<dyn Metric> {
-        Box::new(self.clone())
-    }
-}
-
-impl Clone for Box<dyn Metric> {
-    fn clone(&self) -> Box<dyn Metric> {
-        self.clone_box()
     }
 }

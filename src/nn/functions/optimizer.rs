@@ -1,4 +1,5 @@
-use super::layer::Layer;
+use crate::nn::layer::Layer;
+use crate::dyn_clone;
 use ndarray::Array2;
 
 /// Wrapper for updating a network with any given
@@ -26,6 +27,7 @@ pub trait Optimizer: DynClone + Sync + Send {
     /// * `layers` - Layers of the network to apply gradient descent to
     fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>, input_rows: usize);
 }
+dyn_clone!(Optimizer);
 
 /// Stochastic Gradient Descent with momentum
 #[derive(Clone)]
@@ -174,25 +176,5 @@ impl Optimizer for Adam {
             let moment_adj: Array2<f64> = (moment_bar * self.learning_rate) / velocity_sqrt;
             layer.update(&moment_adj, &delta_biases, input_rows)
         }
-    }
-}
-
-pub trait DynClone {
-    /// Create a clone of a boxed instance of a trait
-    fn clone_box(&self) -> Box<dyn Optimizer>;
-}
-
-impl<T> DynClone for T
-where
-    T: 'static + Optimizer + Clone,
-{
-    fn clone_box(&self) -> Box<dyn Optimizer> {
-        Box::new(self.clone())
-    }
-}
-
-impl Clone for Box<dyn Optimizer> {
-    fn clone(&self) -> Box<dyn Optimizer> {
-        self.clone_box()
     }
 }

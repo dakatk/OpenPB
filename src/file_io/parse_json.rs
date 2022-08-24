@@ -1,9 +1,9 @@
-use crate::nn::activation::{ActivationFn, LeakyReLU, ReLU, Sigmoid};
-use crate::nn::cost::{Cost, MSE};
-use crate::nn::encoder::{Encoder, OneHot};
-use crate::nn::metric::{Accuracy, Metric};
-use crate::nn::optimizer;
-use crate::nn::optimizer::{Adam, Optimizer, SGD};
+use crate::nn::functions::activation::{ActivationFn, LeakyReLU, ReLU, Sigmoid};
+use crate::nn::functions::cost::{Cost, MSE};
+use crate::nn::functions::encoder::{Encoder, OneHot};
+use crate::nn::functions::metric::{Accuracy, Metric};
+use crate::nn::functions::optimizer;
+use crate::nn::functions::optimizer::{Adam, Optimizer, SGD};
 use crate::nn::perceptron::Perceptron;
 use ndarray::Array2;
 use serde::Deserialize;

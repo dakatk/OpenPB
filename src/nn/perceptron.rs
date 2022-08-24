@@ -1,14 +1,12 @@
 use std::fmt::Debug;
 
-use super::activation::ActivationFn;
-use super::cost::Cost;
-use super::encoder::Encoder;
+use super::functions::activation::ActivationFn;
+use super::functions::cost::Cost;
+use super::functions::encoder::Encoder;
+use super::functions::metric::Metric;
+use super::functions::optimizer::{optimize, Optimizer};
 use super::layer::Layer;
-use super::metric::Metric;
-use super::optimizer::{optimize, Optimizer};
 use ndarray::Array2;
-// use rand::prelude::*;
-// use rand::seq::SliceRandom;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 pub struct Perceptron {
