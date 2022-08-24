@@ -1,7 +1,7 @@
 //use crate::nn::perceptron::Perceptron;
 use super::results_ser::ThreadedResultsSer;
+use crate::args::Args;
 use chrono::{DateTime, Utc};
-use clap::ArgMatches;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
@@ -13,9 +13,9 @@ use std::path::Path;
 ///
 /// * `args` - Command line arguments
 /// * `network` - Trained network to be serialized
-pub fn save_to_dir(args: &ArgMatches, threaded_results: ThreadedResultsSer) -> Result<(), String> {
-    let filepath: String = if args.is_present("output") {
-        args.value_of("output").unwrap().to_owned()
+pub fn save_to_dir(args: Args, threaded_results: ThreadedResultsSer) -> Result<(), String> {
+    let filepath: String = if let Some(output_path) = args.output {
+        output_path
     } else {
         let now: DateTime<Utc> = Utc::now();
         format!("output/{}.json", now.format("%d%m%y%H%M%S"))
