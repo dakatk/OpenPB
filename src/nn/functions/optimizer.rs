@@ -1,4 +1,5 @@
-use super::layer::Layer;
+use crate::nn::layer::Layer;
+use crate::dyn_clone;
 use ndarray::Array2;
 
 /// Wrapper for updating a network with any given
@@ -17,7 +18,7 @@ pub const DEFAULT_BETA: f64 = 0.999;
 
 /// Optimizer functions that's used to determine how a Network's weights should be
 /// Adjusted after each training step
-pub trait Optimizer {
+pub trait Optimizer: DynClone + Sync + Send {
     /// Returns the calculated adjustment factor for the Network's
     /// weights after a single step of training
     ///
@@ -26,8 +27,10 @@ pub trait Optimizer {
     /// * `layers` - Layers of the network to apply gradient descent to
     fn update(&mut self, layers: &mut Vec<Layer>, deltas: &Vec<Array2<f64>>, input_rows: usize);
 }
+dyn_clone!(Optimizer);
 
 /// Stochastic Gradient Descent with momentum
+#[derive(Clone)]
 pub struct SGD {
     /// The step size when adjusting weights for each call of gradient descent
     learning_rate: f64,
@@ -81,6 +84,7 @@ impl Optimizer for SGD {
     }
 }
 
+#[derive(Clone)]
 pub struct Adam {
     /// Current step in the training process
     time_step: u16,

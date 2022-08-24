@@ -1,12 +1,12 @@
-use super::activation::ActivationFn;
-use super::cost::Cost;
-use super::encoder::Encoder;
+use std::fmt::Debug;
+
+use super::functions::activation::ActivationFn;
+use super::functions::cost::Cost;
+use super::functions::encoder::Encoder;
+use super::functions::metric::Metric;
+use super::functions::optimizer::{optimize, Optimizer};
 use super::layer::Layer;
-use super::metric::Metric;
-use super::optimizer::{optimize, Optimizer};
 use ndarray::Array2;
-// use rand::prelude::*;
-// use rand::seq::SliceRandom;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 pub struct Perceptron {
@@ -108,6 +108,10 @@ impl Perceptron {
     /// * `epochs` - Maximum number of training cycles
     /// * `shuffle` - When 'true', training inputs are shuffled at the start of
     /// each training cycle
+    /// 
+    /// # Returns
+    /// 
+    /// The number of epochs it took for the training to complete (metric check passed)
     pub fn fit(
         &mut self,
         training_set: &(Array2<f64>, Array2<f64>),
@@ -118,7 +122,7 @@ impl Perceptron {
         encoder: &dyn Encoder,
         epochs: u64,
         shuffle: bool,
-    ) {
+    ) -> u64 {
         // Keep track of which iteration training ended on
         // (default is the maximum number of epochs)
         let mut last_epoch: u64 = epochs;
@@ -158,7 +162,7 @@ impl Perceptron {
             // the given Optimizer
             optimize(optimizer, &mut self.layers, input_rows);
         }
-        println!("Training ended on epoch {}\n", last_epoch);
+        last_epoch
     }
 
     /// Performs the feedforward step for all Layers to return the
@@ -217,5 +221,13 @@ impl Serialize for Perceptron {
         let mut s = serializer.serialize_struct("Perceptron", 1)?;
         s.serialize_field("layers", &self.layers)?;
         s.end()
+    }
+}
+
+impl Debug for Perceptron {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Only returns number of layers, not the information contained
+        // within each layer
+        f.debug_struct("Perceptron").field("layers", &self.layers.len()).finish()
     }
 }

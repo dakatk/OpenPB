@@ -1,6 +1,7 @@
-use crate::nn::perceptron::Perceptron;
+//use crate::nn::perceptron::Perceptron;
+use super::results_ser::ThreadedResultsSer;
+use crate::args::Args;
 use chrono::{DateTime, Utc};
-use clap::ArgMatches;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
@@ -12,9 +13,9 @@ use std::path::Path;
 ///
 /// * `args` - Command line arguments
 /// * `network` - Trained network to be serialized
-pub fn save_to_dir(args: &ArgMatches, network: &Perceptron) -> Result<(), String> {
-    let filepath: String = if args.is_present("output") {
-        args.value_of("output").unwrap().to_owned()
+pub fn save_to_dir(args: Args, threaded_results: ThreadedResultsSer) -> Result<(), String> {
+    let filepath: String = if let Some(output_path) = args.output {
+        output_path
     } else {
         let now: DateTime<Utc> = Utc::now();
         format!("output/{}.json", now.format("%d%m%y%H%M%S"))
@@ -27,7 +28,7 @@ pub fn save_to_dir(args: &ArgMatches, network: &Perceptron) -> Result<(), String
             Err(err) => return Err(err.to_string()),
         }
     }
-    save_layer_values(network, filepath)
+    save_layer_values(threaded_results, filepath)
 }
 
 /// Save internal values (weights and biases) from each layer of a network
@@ -36,7 +37,7 @@ pub fn save_to_dir(args: &ArgMatches, network: &Perceptron) -> Result<(), String
 ///
 /// * `network` - Network object to be serialized
 /// * `filepath` - JSON file to write serialized values to
-fn save_layer_values(network: &Perceptron, filepath: &Path) -> Result<(), String> {
+fn save_layer_values(threaded_results: ThreadedResultsSer, filepath: &Path) -> Result<(), String> {
     println!("\nAttempting to write to {:#?}...", filepath);
 
     let mut file = match File::create(filepath) {
@@ -48,10 +49,8 @@ fn save_layer_values(network: &Perceptron, filepath: &Path) -> Result<(), String
             ))
         }
     };
-
-    // TODO Save values in CSV/Excel format + add other relevant data
-    let network_ser = serde_json::to_string_pretty(&network).unwrap();
-
+    
+    let network_ser = serde_json::to_string_pretty(&threaded_results).unwrap();
     match file.write_all(network_ser.as_bytes()) {
         Ok(_) => {
             println!("Success!");

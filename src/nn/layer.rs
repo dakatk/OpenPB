@@ -1,4 +1,4 @@
-use super::activation::ActivationFn;
+use super::functions::activation::ActivationFn;
 use ndarray::{Array1, Array2, Axis};
 use ndarray_rand::RandomExt;
 use rand::distributions::{Distribution, Uniform};

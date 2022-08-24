@@ -1,9 +1,10 @@
+use crate::dyn_clone;
 use ndarray::Array2;
 use serde_json::{Map, Value};
 
 /// Defines a way to check how well our Network has fit te data so far.
 /// Used in the Network fit function to determine early stopping conditions
-pub trait Metric {
+pub trait Metric: DynClone + Sync + Send {
     /// Metric name for command line output
     fn label(&self) -> &str;
 
@@ -18,9 +19,11 @@ pub trait Metric {
     /// * `y` - Expected values
     fn check(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> bool;
 }
+dyn_clone!(Metric);
 
 /// Metric that is satisfied when a certain percentage
 /// of all expected and actual output values are equal
+#[derive(Clone)]
 pub struct Accuracy {
     ///
     min: f64,

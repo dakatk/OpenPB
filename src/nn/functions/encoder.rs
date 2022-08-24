@@ -1,9 +1,10 @@
+use crate::dyn_clone;
 use ndarray::{Array2, Axis};
 use ndarray_stats::QuantileExt;
 use serde_json::{Map, Value};
 
 /// Transform outputs to/from human-readable values
-pub trait Encoder {
+pub trait Encoder: DynClone + Sync + Send {
     /// Encodes human-readable values to the same
     /// format as the raw network output
     ///
@@ -20,10 +21,12 @@ pub trait Encoder {
     /// * `y` - Raw (encoded) network output vectors
     fn decode(&self, y: &Array2<f64>) -> Array2<f64>;
 }
+dyn_clone!(Encoder);
 
 /// One-hot encoding: converts integers to 1d arrays
 /// where every index is a 0 except for the index
 /// corresponding to the integers value
+#[derive(Clone)]
 pub struct OneHot {
     /// Maximum integer value (determines length of generated arrays)
     max: usize,
