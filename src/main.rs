@@ -6,7 +6,7 @@ mod nn;
 mod file_io;
 
 use clap::Parser;
-use file_io::parse_json::NetworkDataDe;
+use file_io::json_de::NetworkDataDe;
 use trainer::train_from_json;
 use args::Args;
 use std::fs;

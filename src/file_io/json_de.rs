@@ -32,7 +32,7 @@ struct LayerDe {
     neurons: usize,
 
     /// Dropout chance (for regularization)
-    dropout: Option<f32>,
+    dropout_rate: Option<f32>,
 
     /// Name of activation function
     activation: String,
@@ -189,7 +189,7 @@ impl NetworkDataDe {
                     None => return Err("Invalid activation function name"),
                 };
 
-            network.add_layer(layer.neurons, input_shape, activation_fn, layer.dropout);
+            network.add_layer(layer.neurons, input_shape, activation_fn, layer.dropout_rate);
             if input_shape.is_some() {
                 input_shape = None
             }
@@ -202,7 +202,7 @@ impl NetworkDataDe {
 /// matches an existing cost function
 fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
     match name.as_str() {
-        "mse" => Some(Box::new(MSE)),
+        "mean squared error" | "mean_squared_error" | "mse" => Some(Box::new(MSE)),
         _ => None,
     }
 }
@@ -213,7 +213,7 @@ fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
     match name.as_str() {
         "sigmoid" => Some(Box::new(Sigmoid)),
         "relu" => Some(Box::new(ReLU)),
-        "leakyrelu" => Some(Box::new(LeakyReLU)),
+        "leaky relu" | "leaky_relu" | "leakyrelu" => Some(Box::new(LeakyReLU)),
         _ => None,
     }
 }
@@ -222,7 +222,7 @@ fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
 /// matches an existing metric
 fn metric_from_str(metric_de: &MetricDe) -> Option<Box<dyn Metric>> {
     match metric_de.name.to_lowercase().as_str() {
-        "accuracy" => Some(Box::new(Accuracy::new(&metric_de.args))),
+        "accuracy" | "acc" => Some(Box::new(Accuracy::new(&metric_de.args))),
         _ => None,
     }
 }
@@ -231,7 +231,7 @@ fn metric_from_str(metric_de: &MetricDe) -> Option<Box<dyn Metric>> {
 /// matches an existing encoder
 fn encoder_from_str(decode_de: &EncoderDe) -> Option<Box<dyn Encoder>> {
     match decode_de.name.to_lowercase().as_str() {
-        "one_hot" | "onehot" => Some(Box::new(OneHot::new(&decode_de.args))),
+        "one hot" | "one_hot" | "onehot" => Some(Box::new(OneHot::new(&decode_de.args))),
         _ => None,
     }
 }
@@ -250,8 +250,8 @@ fn optimizer_from_str(optimizer_de: &OptimizerDe) -> Option<Box<dyn Optimizer>> 
     };
 
     match optimizer_de.name.to_lowercase().as_str() {
-        "sgd" => Some(Box::new(SGD::new(optimizer_de.learning_rate, beta1))),
-        "adam" => Some(Box::new(Adam::new(
+        "stochastic gradient descent" | "gradient descent" | "sgd" => Some(Box::new(SGD::new(optimizer_de.learning_rate, beta1))),
+        "adaptive momentum" | "adam" => Some(Box::new(Adam::new(
             optimizer_de.learning_rate,
             beta1,
             beta2,

@@ -1,4 +1,4 @@
-use crate::file_io::parse_json::NetworkDataDe;
+use crate::file_io::json_de::NetworkDataDe;
 use crate::file_io::results_ser::{TrainingResultsSer, ThreadedResultsSer};
 use crate::file_io::save_output;
 use crate::nn::functions::cost::Cost;
