@@ -26,7 +26,7 @@ struct DataDe {
 }
 
 /// Deserialized values representing a single Layer in JSON
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct LayerDe {
     /// Number of neurons
     neurons: usize,
@@ -39,7 +39,7 @@ struct LayerDe {
 }
 
 /// Deserialized values representing the Optimizer in JSON
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct OptimizerDe {
     /// Name of the optimization method
     name: String,
@@ -55,7 +55,7 @@ struct OptimizerDe {
 }
 
 ///
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct EncoderDe {
     /// Name of the Decoder
     name: String,
@@ -65,7 +65,7 @@ struct EncoderDe {
 }
 
 /// Deserialized values representing the evaluation Metric in JSON
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct MetricDe {
     /// Name of the Metric
     name: String,
@@ -75,7 +75,7 @@ struct MetricDe {
 }
 
 /// Deserialized values representing the Network setup in JSON
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct NetworkDe {
     /// Cost function name
     cost: String,
@@ -96,11 +96,9 @@ struct NetworkDe {
     epochs: u64,
 }
 
+#[derive(Clone)]
 /// Container for all deserialized data needed to train a network
 pub struct NetworkDataDe {
-    /// Netowkr object
-    pub network: Perceptron,
-
     /// Training set input data
     pub train_inputs: Array2<f64>,
 
@@ -127,27 +125,64 @@ pub struct NetworkDataDe {
 
     /// Number of trianing epochs
     pub epochs: u64,
+
+    /// Deserailized paramaters for network creation
+    network_de: NetworkDe
 }
 
-///
 impl NetworkDataDe {
+    /// # Arguments
+    /// 
+    /// * `data_json` - Raw contents of JSON file containing 
+    /// training and validation data
+    /// * `network_json` - Raw contents of JSON file containg
+    /// network parameters
     pub fn from_json<'a>(
         data_json: &'a str,
         network_json: &'a str,
     ) -> Result<NetworkDataDe, &'static str> {
+        // Deserialize raw file contents into struct values
         let data_de: DataDe = serde_json::from_str(data_json).unwrap();
         let network_de: NetworkDe = serde_json::from_str(network_json).unwrap();
 
-        // let input_values: InputDe = data_de.inputs;
-        // let output_values: OutputDe = data_de.outputs;
-        let train_inputs: Array2<f64> = data_de.train_inputs;
-        let train_outputs: Array2<f64> = data_de.train_outputs;
+        let cost: Box<dyn Cost> = match cost_from_str(network_de.cost.to_lowercase()) {
+            Some(value) => value,
+            None => return Err("Invalid cost function name"),
+        };
+        let metric: Box<dyn Metric> = match metric_from_str(&network_de.metric) {
+            Some(value) => value,
+            None => return Err("Invalid metric name"),
+        };
+        let encoder: Box<dyn Encoder> = match encoder_from_str(&network_de.encoder) {
+            Some(value) => value,
+            None => return Err("Invalid decoder name"),
+        };
+        let optimizer = match optimizer_from_str(&network_de.optimizer) {
+            Some(value) => value,
+            None => return Err("Invalid activation function name"),
+        };
 
+        Ok(NetworkDataDe {
+            train_inputs: data_de.train_inputs,
+            train_outputs: data_de.train_outputs,
+            test_inputs: data_de.test_inputs,
+            test_outputs: data_de.test_outputs,
+            cost,
+            metric,
+            encoder,
+            optimizer,
+            epochs: network_de.epochs,
+            network_de
+        })
+    }
+
+    /// 
+    pub fn create_network(&self) -> Result<Perceptron, &'static str> {
         let mut network = Perceptron::new();
-        let input_shape: (usize, usize) = (train_inputs.ncols(), train_inputs.nrows());
+        let input_shape: (usize, usize) = (self.train_inputs.ncols(), self.train_inputs.nrows());
         let mut input_shape: Option<(usize, usize)> = Some(input_shape);
 
-        for layer in network_de.layers.iter() {
+        for layer in self.network_de.layers.iter() {
             let activation_fn: Box<dyn ActivationFn> =
                 match activation_from_str(layer.activation.to_lowercase()) {
                     Some(value) => value,
@@ -159,43 +194,12 @@ impl NetworkDataDe {
                 input_shape = None
             }
         }
-
-        let cost: Box<dyn Cost> = match cost_from_str(network_de.cost.to_lowercase()) {
-            Some(value) => value,
-            None => return Err("Invalid cost function name"),
-        };
-
-        let metric: Box<dyn Metric> = match metric_from_str(network_de.metric) {
-            Some(value) => value,
-            None => return Err("Invalid metric name"),
-        };
-
-        let encoder: Box<dyn Encoder> = match decode_from_str(network_de.encoder) {
-            Some(value) => value,
-            None => return Err("Invalid decoder name"),
-        };
-
-        let optimizer = match optimizer_from_str(network_de.optimizer) {
-            Some(value) => value,
-            None => return Err("Invalid activation function name"),
-        };
-
-        Ok(NetworkDataDe {
-            network,
-            train_inputs,
-            train_outputs,
-            test_inputs: data_de.test_inputs,
-            test_outputs: data_de.test_outputs,
-            cost,
-            metric,
-            encoder,
-            optimizer,
-            epochs: network_de.epochs,
-        })
+        Ok(network)
     }
 }
 
-///
+/// Create new 'Cost' object if the provided name 
+/// matches an existing cost function
 fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
     match name.as_str() {
         "mse" => Some(Box::new(MSE)),
@@ -203,7 +207,8 @@ fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
     }
 }
 
-///
+/// Create new 'ActivationFn' object if the provided name 
+/// matches an existing activation function
 fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
     match name.as_str() {
         "sigmoid" => Some(Box::new(Sigmoid)),
@@ -213,24 +218,27 @@ fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
     }
 }
 
-///
-fn metric_from_str(metric_de: MetricDe) -> Option<Box<dyn Metric>> {
+/// Create new 'Metric' object if the provided name 
+/// matches an existing metric
+fn metric_from_str(metric_de: &MetricDe) -> Option<Box<dyn Metric>> {
     match metric_de.name.to_lowercase().as_str() {
         "accuracy" => Some(Box::new(Accuracy::new(&metric_de.args))),
         _ => None,
     }
 }
 
-///
-fn decode_from_str(decode_de: EncoderDe) -> Option<Box<dyn Encoder>> {
+/// Create new 'Encoder' object if the provided name 
+/// matches an existing encoder
+fn encoder_from_str(decode_de: &EncoderDe) -> Option<Box<dyn Encoder>> {
     match decode_de.name.to_lowercase().as_str() {
         "one_hot" | "onehot" => Some(Box::new(OneHot::new(&decode_de.args))),
         _ => None,
     }
 }
 
-///
-fn optimizer_from_str(optimizer_de: OptimizerDe) -> Option<Box<dyn Optimizer>> {
+/// Create new 'Optimizer' object if the provided name 
+/// matches an existing optimization function
+fn optimizer_from_str(optimizer_de: &OptimizerDe) -> Option<Box<dyn Optimizer>> {
     let beta1: f64 = match optimizer_de.beta1 {
         Some(beta1) => beta1,
         None => optimizer::DEFAULT_GAMMA,

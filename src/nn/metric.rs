@@ -3,7 +3,7 @@ use serde_json::{Map, Value};
 
 /// Defines a way to check how well our Network has fit te data so far.
 /// Used in the Network fit function to determine early stopping conditions
-pub trait Metric {
+pub trait Metric: DynClone + Sync + Send {
     /// Metric name for command line output
     fn label(&self) -> &str;
 
@@ -21,6 +21,7 @@ pub trait Metric {
 
 /// Metric that is satisfied when a certain percentage
 /// of all expected and actual output values are equal
+#[derive(Clone)]
 pub struct Accuracy {
     ///
     min: f64,
@@ -52,5 +53,25 @@ impl Metric for Accuracy {
 
     fn check(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> bool {
         self.value(actual, expected) >= self.min
+    }
+}
+
+pub trait DynClone {
+    /// Create a clone of a boxed instance of a trait
+    fn clone_box(&self) -> Box<dyn Metric>;
+}
+
+impl<T> DynClone for T
+where
+    T: 'static + Metric + Clone,
+{
+    fn clone_box(&self) -> Box<dyn Metric> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn Metric> {
+    fn clone(&self) -> Box<dyn Metric> {
+        self.clone_box()
     }
 }

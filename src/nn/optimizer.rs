@@ -17,7 +17,7 @@ pub const DEFAULT_BETA: f64 = 0.999;
 
 /// Optimizer functions that's used to determine how a Network's weights should be
 /// Adjusted after each training step
-pub trait Optimizer {
+pub trait Optimizer: DynClone + Sync + Send {
     /// Returns the calculated adjustment factor for the Network's
     /// weights after a single step of training
     ///
@@ -28,6 +28,7 @@ pub trait Optimizer {
 }
 
 /// Stochastic Gradient Descent with momentum
+#[derive(Clone)]
 pub struct SGD {
     /// The step size when adjusting weights for each call of gradient descent
     learning_rate: f64,
@@ -81,6 +82,7 @@ impl Optimizer for SGD {
     }
 }
 
+#[derive(Clone)]
 pub struct Adam {
     /// Current step in the training process
     time_step: u16,
@@ -172,5 +174,25 @@ impl Optimizer for Adam {
             let moment_adj: Array2<f64> = (moment_bar * self.learning_rate) / velocity_sqrt;
             layer.update(&moment_adj, &delta_biases, input_rows)
         }
+    }
+}
+
+pub trait DynClone {
+    /// Create a clone of a boxed instance of a trait
+    fn clone_box(&self) -> Box<dyn Optimizer>;
+}
+
+impl<T> DynClone for T
+where
+    T: 'static + Optimizer + Clone,
+{
+    fn clone_box(&self) -> Box<dyn Optimizer> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn Optimizer> {
+    fn clone(&self) -> Box<dyn Optimizer> {
+        self.clone_box()
     }
 }

@@ -2,7 +2,7 @@ use ndarray::Array2;
 
 /// Neuron activation function used for feed forward
 /// and backprop methods in Network training
-pub trait ActivationFn: DynClone {
+pub trait ActivationFn: DynClone + Sync + Send {
     /// Call the activation function with a set of inputs
     ///
     /// # Arguments

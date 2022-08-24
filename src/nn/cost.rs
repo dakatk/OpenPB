@@ -1,7 +1,7 @@
 use ndarray::Array2;
 
 /// Cost or loss function to determine the Network's error
-pub trait Cost: DynClone {
+pub trait Cost: DynClone + Sync + Send {
     /// First derivative of the cost function. Used in Network backprop
     ///
     /// # Arguments
