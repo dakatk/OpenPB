@@ -18,5 +18,5 @@ pub struct Args {
     pub threads: usize,
     /// Flag that indicates whether or not to shuffle training data during each cycle (optional)
     #[clap(short, long, value_parser, default_value_t = false)]
-    pub shuffle: bool
+    pub shuffle: bool,
 }

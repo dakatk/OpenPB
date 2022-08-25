@@ -1,23 +1,23 @@
+use crate::args::Args;
 use crate::file_io::json_de::NetworkDataDe;
-use crate::file_io::results_ser::{TrainingResultsSer, ThreadedResultsSer};
+use crate::file_io::results_ser::{ThreadedResultsSer, TrainingResultsSer};
 use crate::file_io::save_output;
 use crate::nn::functions::cost::Cost;
 use crate::nn::functions::encoder::Encoder;
 use crate::nn::functions::metric::Metric;
 use crate::nn::functions::optimizer::Optimizer;
 use crate::nn::perceptron::Perceptron;
-use crate::args::Args;
 use ndarray::Array2;
 use std::thread::{self, JoinHandle};
 use std::time::SystemTime;
 use std::usize;
 
 /// Train network with deserailzed JSON data
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `network_data_de` - Deserialized network parameters with
-/// training and validation data 
+/// training and validation data
 /// * `args` - Command line arguments
 pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(), String> {
     let mut training_threads: Vec<JoinHandle<TrainingResultsSer>> = vec![];
@@ -25,7 +25,11 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
 
     // Create training threads
     for id in 0..args.threads {
-        training_threads.push(train_single_thread(id, network_data_de.clone(), args.shuffle));
+        training_threads.push(train_single_thread(
+            id,
+            network_data_de.clone(),
+            args.shuffle,
+        ));
     }
 
     // Wait for each training thread to finish, then add the data
@@ -39,19 +43,16 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
     // Isolate validation outputs
     let validation_outputs: Array2<f64> = network_data_de.test_outputs.to_owned();
 
-    let threaded_results = ThreadedResultsSer::new(
-        all_results,
-        validation_inputs,
-        validation_outputs
-    );
+    let threaded_results =
+        ThreadedResultsSer::new(all_results, validation_inputs, validation_outputs);
     save_output::save_to_dir(args, threaded_results)
 }
 
 /// Create new training thread
 fn train_single_thread(
-    id: usize, 
+    id: usize,
     mut network_data_de: NetworkDataDe,
-    shuffle: bool
+    shuffle: bool,
 ) -> JoinHandle<TrainingResultsSer> {
     thread::spawn(move || {
         // Create new network with randomized weights and biases
@@ -95,7 +96,7 @@ fn train_single_thread(
 
         // Total time after training finished
         let elapsed_time: f32 = now.elapsed().unwrap().as_secs_f32();
-        // Prediction from feeding validation inputs into trained network 
+        // Prediction from feeding validation inputs into trained network
         let predicted_output: Array2<f64> = network.predict(validation_inputs, encoder);
 
         // Metric values
@@ -110,7 +111,7 @@ fn train_single_thread(
             metric_passed,
             elapsed_time,
             total_epochs,
-            predicted_output
+            predicted_output,
         )
     })
 }

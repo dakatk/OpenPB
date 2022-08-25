@@ -6,7 +6,7 @@ use super::functions::encoder::Encoder;
 use super::functions::metric::Metric;
 use super::functions::optimizer::{optimize, Optimizer};
 use super::layer::Layer;
-use ndarray::{Array2, Array1, Axis, ArrayViewMut1};
+use ndarray::{Array1, Array2, ArrayViewMut1, Axis};
 use rand::seq::SliceRandom;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
@@ -109,9 +109,9 @@ impl Perceptron {
     /// * `epochs` - Maximum number of training cycles
     /// * `shuffle` - When 'true', training inputs are shuffled at the start of
     /// each training cycle
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// The number of epochs it took for the training to complete (metric check passed)
     pub fn fit(
         &mut self,
@@ -177,21 +177,18 @@ impl Perceptron {
     }
 
     /// Shuffle matrix rows or cols in-place
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `values` - Matrix to be shuffled
     /// * `indices` - Generated list of shuffled indices along given axis
     /// * `axis` - Axis in which vectors are shuffled
     fn shuffle_on_axis(&self, values: &mut Array2<f64>, indices: &Vec<usize>, axis: Axis) {
-        let new_rows: Vec<Array1<f64>> = indices.iter()
-            .map(
-                |index| {
-                    values.index_axis(axis, *index).to_owned()
-                }
-            )
+        let new_rows: Vec<Array1<f64>> = indices
+            .iter()
+            .map(|index| values.index_axis(axis, *index).to_owned())
             .collect();
-        
+
         for (i, new_row) in new_rows.iter().enumerate() {
             let mut row: ArrayViewMut1<f64> = values.index_axis_mut(axis, i);
             row.assign(new_row);
@@ -261,6 +258,8 @@ impl Debug for Perceptron {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Only returns number of layers, not the information contained
         // within each layer
-        f.debug_struct("Perceptron").field("layers", &self.layers.len()).finish()
+        f.debug_struct("Perceptron")
+            .field("layers", &self.layers.len())
+            .finish()
     }
 }

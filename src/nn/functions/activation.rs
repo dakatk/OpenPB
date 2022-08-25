@@ -1,5 +1,5 @@
 use crate::dyn_clone;
-use ndarray::{Array2, Array1, Axis};
+use ndarray::{Array1, Array2, Axis};
 
 /// Neuron activation function used for feed forward
 /// and backprop methods in Network training
@@ -47,15 +47,11 @@ pub struct ReLU;
 
 impl ActivationFn for ReLU {
     fn call(&self, x: &Array2<f64>) -> Array2<f64> {
-        x.mapv(|x|
-            if x > 0.0 { x } else { 0.0 }
-        )
+        x.mapv(|x| if x > 0.0 { x } else { 0.0 })
     }
 
     fn prime(&self, x: &Array2<f64>) -> Array2<f64> {
-        x.mapv(|x|
-            if x > 0.0 { 1.0 } else { 0.0 }
-        )
+        x.mapv(|x| if x > 0.0 { 1.0 } else { 0.0 })
     }
 }
 
@@ -65,15 +61,11 @@ pub struct LeakyReLU;
 
 impl ActivationFn for LeakyReLU {
     fn call(&self, x: &Array2<f64>) -> Array2<f64> {
-        x.mapv(|x|
-            if x > 0.0 { x } else { 0.01 * x }
-        )
+        x.mapv(|x| if x > 0.0 { x } else { 0.01 * x })
     }
 
     fn prime(&self, x: &Array2<f64>) -> Array2<f64> {
-        x.mapv(|x| 
-            if x > 0.0 { 1.0 } else { 0.01 }
-        )
+        x.mapv(|x| if x > 0.0 { 1.0 } else { 0.01 })
     }
 }
 

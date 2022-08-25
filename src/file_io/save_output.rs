@@ -42,14 +42,9 @@ fn save_layer_values(threaded_results: ThreadedResultsSer, filepath: &Path) -> R
 
     let mut file = match File::create(filepath) {
         Ok(file) => file,
-        Err(error) => {
-            return Err(format!(
-                "Failed to create file {:#?}: {error}",
-                filepath
-            ))
-        }
+        Err(error) => return Err(format!("Failed to create file {:#?}: {error}", filepath)),
     };
-    
+
     let network_ser = serde_json::to_string_pretty(&threaded_results).unwrap();
     match file.write_all(network_ser.as_bytes()) {
         Ok(_) => {

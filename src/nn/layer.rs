@@ -53,7 +53,7 @@ impl Layer {
         activation_fn: Box<dyn ActivationFn>,
         dropout: Option<f32>,
     ) -> Layer {
-        // Weights and biases are initialized randomly 
+        // Weights and biases are initialized randomly
         // in the range [-0.5, 0.5)
         let distribution: Uniform<f64> = Uniform::new(-0.5, 0.5);
 

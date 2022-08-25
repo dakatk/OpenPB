@@ -1,5 +1,5 @@
-use crate::nn::layer::Layer;
 use crate::dyn_clone;
+use crate::nn::layer::Layer;
 use ndarray::Array2;
 
 /// Wrapper for updating a network with any given

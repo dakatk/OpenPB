@@ -127,13 +127,13 @@ pub struct NetworkDataDe {
     pub epochs: u64,
 
     /// Deserailized paramaters for network creation
-    network_de: NetworkDe
+    network_de: NetworkDe,
 }
 
 impl NetworkDataDe {
     /// # Arguments
-    /// 
-    /// * `data_json` - Raw contents of JSON file containing 
+    ///
+    /// * `data_json` - Raw contents of JSON file containing
     /// training and validation data
     /// * `network_json` - Raw contents of JSON file containg
     /// network parameters
@@ -151,16 +151,16 @@ impl NetworkDataDe {
 
         // Check size of validation data sets
         if input_rows != output_rows {
-            return Err(format!("Number of rows for training inputs ({}) != number of rows for training outputs ({})", input_rows, output_rows))
+            return Err(format!("Number of rows for training inputs ({}) != number of rows for training outputs ({})", input_rows, output_rows));
         }
 
         // Get row counts for validation input and output data
         let input_rows: usize = data_de.test_inputs.nrows();
         let output_rows: usize = data_de.test_outputs.nrows();
-        
+
         // Check size of validation data sets
         if input_rows != output_rows {
-            return Err(format!("Number of rows for validation inputs ({}) != number of rows for validation outputs ({})", input_rows, output_rows))
+            return Err(format!("Number of rows for validation inputs ({}) != number of rows for validation outputs ({})", input_rows, output_rows));
         }
 
         let cost: Box<dyn Cost> = match cost_from_str(network_de.cost.to_lowercase()) {
@@ -190,7 +190,7 @@ impl NetworkDataDe {
             encoder,
             optimizer,
             epochs: network_de.epochs,
-            network_de
+            network_de,
         })
     }
 
@@ -208,7 +208,12 @@ impl NetworkDataDe {
                     None => return Err("Invalid activation function name"),
                 };
 
-            network.add_layer(layer.neurons, input_shape, activation_fn, layer.dropout_rate);
+            network.add_layer(
+                layer.neurons,
+                input_shape,
+                activation_fn,
+                layer.dropout_rate,
+            );
             if input_shape.is_some() {
                 input_shape = None
             }
@@ -217,7 +222,7 @@ impl NetworkDataDe {
     }
 }
 
-/// Create new 'Cost' object if the provided name 
+/// Create new 'Cost' object if the provided name
 /// matches an existing cost function
 fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
     match name.as_str() {
@@ -226,7 +231,7 @@ fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
     }
 }
 
-/// Create new 'ActivationFn' object if the provided name 
+/// Create new 'ActivationFn' object if the provided name
 /// matches an existing activation function
 fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
     match name.as_str() {
@@ -237,7 +242,7 @@ fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
     }
 }
 
-/// Create new 'Metric' object if the provided name 
+/// Create new 'Metric' object if the provided name
 /// matches an existing metric
 fn metric_from_str(metric_de: &MetricDe) -> Option<Box<dyn Metric>> {
     match metric_de.name.to_lowercase().as_str() {
@@ -246,7 +251,7 @@ fn metric_from_str(metric_de: &MetricDe) -> Option<Box<dyn Metric>> {
     }
 }
 
-/// Create new 'Encoder' object if the provided name 
+/// Create new 'Encoder' object if the provided name
 /// matches an existing encoder
 fn encoder_from_str(decode_de: &EncoderDe) -> Option<Box<dyn Encoder>> {
     match decode_de.name.to_lowercase().as_str() {
@@ -255,7 +260,7 @@ fn encoder_from_str(decode_de: &EncoderDe) -> Option<Box<dyn Encoder>> {
     }
 }
 
-/// Create new 'Optimizer' object if the provided name 
+/// Create new 'Optimizer' object if the provided name
 /// matches an existing optimization function
 fn optimizer_from_str(optimizer_de: &OptimizerDe) -> Option<Box<dyn Optimizer>> {
     let beta1: f64 = match optimizer_de.beta1 {
@@ -269,7 +274,9 @@ fn optimizer_from_str(optimizer_de: &OptimizerDe) -> Option<Box<dyn Optimizer>> 
     };
 
     match optimizer_de.name.to_lowercase().as_str() {
-        "stochastic gradient descent" | "gradient descent" | "sgd" => Some(Box::new(SGD::new(optimizer_de.learning_rate, beta1))),
+        "stochastic gradient descent" | "gradient descent" | "sgd" => {
+            Some(Box::new(SGD::new(optimizer_de.learning_rate, beta1)))
+        }
         "adaptive momentum" | "adam" => Some(Box::new(Adam::new(
             optimizer_de.learning_rate,
             beta1,

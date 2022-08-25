@@ -1,15 +1,15 @@
 // To generate docs for this project, run command:
 // cargo doc --open --no-deps --document-private-items
 mod args;
-mod trainer;
-mod nn;
 mod file_io;
+mod nn;
+mod trainer;
 
+use args::Args;
 use clap::Parser;
 use file_io::json_de::NetworkDataDe;
-use trainer::train_from_json;
-use args::Args;
 use std::fs;
+use trainer::train_from_json;
 
 #[doc(hidden)]
 fn main() -> Result<(), String> {
