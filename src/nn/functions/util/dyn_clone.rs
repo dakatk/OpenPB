@@ -1,3 +1,4 @@
+// Allow boxes of specific traits to be cloned
 #[doc(hidden)]
 #[macro_export]
 macro_rules! dyn_clone {

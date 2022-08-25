@@ -6,7 +6,8 @@ use super::functions::encoder::Encoder;
 use super::functions::metric::Metric;
 use super::functions::optimizer::{optimize, Optimizer};
 use super::layer::Layer;
-use ndarray::Array2;
+use ndarray::{Array2, Array1, Axis, ArrayViewMut1};
+use rand::seq::SliceRandom;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 pub struct Perceptron {
@@ -128,8 +129,8 @@ impl Perceptron {
         let mut last_epoch: u64 = epochs;
 
         // Split training set
-        let training_inputs: &Array2<f64> = &training_set.0;
-        let training_outputs: &Array2<f64> = &training_set.1;
+        let mut training_inputs: Array2<f64> = training_set.0.clone();
+        let mut training_outputs: Array2<f64> = training_set.1.clone();
 
         // Split validation set
         let validation_inputs: &Array2<f64> = &validation_set.0;
@@ -137,12 +138,22 @@ impl Perceptron {
 
         // Encode training set output values to match
         // the network's output format
-        let expected: Array2<f64> = encoder.encode(training_outputs).t().to_owned();
+        let expected: Array2<f64> = encoder.encode(&training_outputs).t().to_owned();
         let input_rows: usize = training_inputs.nrows();
+
+        // Initiate RNG
+        let mut rng = rand::thread_rng();
 
         for epoch in 1..=epochs {
             if shuffle {
-                // TODO Shuffle training set
+                // Assumes each input vector has a single corresponding output vector
+                // (number of columns of the training inputs should be
+                // equal to the number of rows of the outputs after transposing)
+                let mut indices: Vec<usize> = (0..training_inputs.ncols()).collect();
+                indices.shuffle(&mut rng);
+
+                self.shuffle_on_axis(&mut training_inputs, &indices, Axis(1));
+                self.shuffle_on_axis(&mut training_outputs, &indices, Axis(0));
             }
             // Check network prediction against validation set
             let prediction: Array2<f64> = self.predict(validation_inputs, encoder);
@@ -154,7 +165,7 @@ impl Perceptron {
                 break;
             }
 
-            let actual: Array2<f64> = self.feed_forward(training_inputs);
+            let actual: Array2<f64> = self.feed_forward(&training_inputs);
             let delta: Array2<f64> = cost.prime(&actual, &expected);
             self.back_prop(&delta);
 
@@ -163,6 +174,28 @@ impl Perceptron {
             optimize(optimizer, &mut self.layers, input_rows);
         }
         last_epoch
+    }
+
+    /// Shuffle matrix rows or cols in-place
+    /// 
+    /// # Arguments
+    /// 
+    /// * `values` - Matrix to be shuffled
+    /// * `indices` - Generated list of shuffled indices along given axis
+    /// * `axis` - Axis in which vectors are shuffled
+    fn shuffle_on_axis(&self, values: &mut Array2<f64>, indices: &Vec<usize>, axis: Axis) {
+        let new_rows: Vec<Array1<f64>> = indices.iter()
+            .map(
+                |index| {
+                    values.index_axis(axis, *index).to_owned()
+                }
+            )
+            .collect();
+        
+        for (i, new_row) in new_rows.iter().enumerate() {
+            let mut row: ArrayViewMut1<f64> = values.index_axis_mut(axis, i);
+            row.assign(new_row);
+        }
     }
 
     /// Performs the feedforward step for all Layers to return the

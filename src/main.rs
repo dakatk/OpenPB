@@ -26,6 +26,6 @@ fn main() -> Result<(), String> {
 
     match NetworkDataDe::from_json(&data_json, &network_json) {
         Ok(network_data_de) => train_from_json(network_data_de, args),
-        Err(error) => Err(error.to_string()),
+        Err(error) => Err(error),
     }
 }

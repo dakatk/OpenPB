@@ -140,26 +140,44 @@ impl NetworkDataDe {
     pub fn from_json<'a>(
         data_json: &'a str,
         network_json: &'a str,
-    ) -> Result<NetworkDataDe, &'static str> {
+    ) -> Result<NetworkDataDe, String> {
         // Deserialize raw file contents into struct values
         let data_de: DataDe = serde_json::from_str(data_json).unwrap();
         let network_de: NetworkDe = serde_json::from_str(network_json).unwrap();
 
+        // Get row counts for training input and output data
+        let input_rows: usize = data_de.train_inputs.nrows();
+        let output_rows: usize = data_de.train_outputs.nrows();
+
+        // Check size of validation data sets
+        if input_rows != output_rows {
+            return Err(format!("Number of rows for training inputs ({}) != number of rows for training outputs ({})", input_rows, output_rows))
+        }
+
+        // Get row counts for validation input and output data
+        let input_rows: usize = data_de.test_inputs.nrows();
+        let output_rows: usize = data_de.test_outputs.nrows();
+        
+        // Check size of validation data sets
+        if input_rows != output_rows {
+            return Err(format!("Number of rows for validation inputs ({}) != number of rows for validation outputs ({})", input_rows, output_rows))
+        }
+
         let cost: Box<dyn Cost> = match cost_from_str(network_de.cost.to_lowercase()) {
             Some(value) => value,
-            None => return Err("Invalid cost function name"),
+            None => return Err("Invalid cost function name".to_string()),
         };
         let metric: Box<dyn Metric> = match metric_from_str(&network_de.metric) {
             Some(value) => value,
-            None => return Err("Invalid metric name"),
+            None => return Err("Invalid metric name".to_string()),
         };
         let encoder: Box<dyn Encoder> = match encoder_from_str(&network_de.encoder) {
             Some(value) => value,
-            None => return Err("Invalid decoder name"),
+            None => return Err("Invalid decoder name".to_string()),
         };
         let optimizer = match optimizer_from_str(&network_de.optimizer) {
             Some(value) => value,
-            None => return Err("Invalid activation function name"),
+            None => return Err("Invalid activation function name".to_string()),
         };
 
         Ok(NetworkDataDe {
@@ -176,7 +194,8 @@ impl NetworkDataDe {
         })
     }
 
-    /// 
+    /// Create new Perceptron instance from previously
+    /// deserialized values
     pub fn create_network(&self) -> Result<Perceptron, &'static str> {
         let mut network = Perceptron::new();
         let input_shape: (usize, usize) = (self.train_inputs.ncols(), self.train_inputs.nrows());
