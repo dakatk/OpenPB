@@ -92,6 +92,7 @@ impl Perceptron {
         }
     }
 
+    // TODO Minibatch support?
     /// Trains the entire Network for a specified number of cycles. Training is
     /// stopped when the given metric is satisfied based on the input/output
     /// sets provided

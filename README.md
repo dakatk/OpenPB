@@ -10,5 +10,6 @@ This is the Open Perceptron Benchmarker, or OpenPB, which is a command-line appl
 
  - [x] Multi-threading so the same setup can be trained/validated mutliple times at once
  - [ ] Human readable output to a CSV/Excel file (including things like average accuracy, run-to-run variance of training cycles, etc)
+    - [ ] Possible option for web interface instead (render results from JSON file on interactive web page)
 
 *Note: This application is still in early development. Unfortunately I don't have the time to work on this project consistently, so updates are periodic at best.*

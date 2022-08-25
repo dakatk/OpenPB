@@ -1,4 +1,5 @@
 [hooks]
+pre-commit = "cargo fmt -- --check"
 pre-push = "cargo fmt -- --check"
 
 [logging]

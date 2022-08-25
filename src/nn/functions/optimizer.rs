@@ -5,7 +5,6 @@ use ndarray::Array2;
 /// Wrapper for updating a network with any given
 /// optimization function using online training
 pub fn optimize(optimizer: &mut dyn Optimizer, layers: &mut Vec<Layer>, input_rows: usize) {
-    // TODO Minibatch support?
     let deltas: Vec<Array2<f64>> = layers.iter().map(|l| l.delta.clone()).collect();
     optimizer.update(layers, &deltas, input_rows);
 }

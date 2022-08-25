@@ -32,9 +32,7 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
     // Create training threads
     for id in 0..args.threads {
         let network_data_arc = Arc::new(Mutex::new(network_data_de.clone()));
-        training_threads.push(train_single_thread(
-            id, network_data_arc, args.shuffle,
-        ));
+        training_threads.push(train_single_thread(id, network_data_arc, args.shuffle));
     }
 
     // Wait for each training thread to finish, then add the data
@@ -49,7 +47,11 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
 }
 
 /// Create new training thread
-fn train_single_thread(id: usize, network_data_arc: Arc<Mutex<NetworkDataDe>>, shuffle: bool) -> JoinHandle<TrainingResultsSer> {
+fn train_single_thread(
+    id: usize,
+    network_data_arc: Arc<Mutex<NetworkDataDe>>,
+    shuffle: bool,
+) -> JoinHandle<TrainingResultsSer> {
     thread::spawn(move || {
         // Take ownership of Mutex data
         let network_data_de: &mut NetworkDataDe = &mut *network_data_arc.lock().unwrap();
@@ -76,6 +78,9 @@ fn train_single_thread(id: usize, network_data_arc: Arc<Mutex<NetworkDataDe>>, s
         // Start time before training begins
         let now: SystemTime = SystemTime::now();
 
+        // Maximum allowed epochs for this thread
+        let epochs: u64 = network_data_de.epochs;
+
         println!("Network initialized, starting training cycle for thread {id}...");
         let total_epochs: u64 = network.fit(
             &training_set,
@@ -84,7 +89,7 @@ fn train_single_thread(id: usize, network_data_arc: Arc<Mutex<NetworkDataDe>>, s
             metric,
             cost,
             encoder,
-            network_data_de.epochs,
+            epochs,
             shuffle,
         );
         println!("Training finished for thread {id}!");
@@ -97,7 +102,7 @@ fn train_single_thread(id: usize, network_data_arc: Arc<Mutex<NetworkDataDe>>, s
         // Prediction from feeding validation inputs into trained network
         let predicted_output: Array2<f64> = network.predict(validation_inputs, encoder);
 
-        // Metric values
+        // Metric results
         let metric_label: String = metric.label().to_string();
         let metric_value: f64 = metric.value(&predicted_output, validation_outputs);
         let metric_passed: bool = metric.check(&predicted_output, validation_outputs);
