@@ -8,6 +8,7 @@ use crate::nn::functions::metric::Metric;
 use crate::nn::functions::optimizer::Optimizer;
 use crate::nn::perceptron::Perceptron;
 use ndarray::Array2;
+use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::SystemTime;
 use std::usize;
@@ -23,12 +24,16 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
     let mut training_threads: Vec<JoinHandle<TrainingResultsSer>> = vec![];
     let mut all_results: Vec<TrainingResultsSer> = vec![];
 
+    // Isolate validation inputs
+    let validation_inputs: Array2<f64> = network_data_de.test_inputs.t().to_owned();
+    // Isolate validation outputs
+    let validation_outputs: Array2<f64> = network_data_de.test_outputs.to_owned();
+
     // Create training threads
     for id in 0..args.threads {
+        let network_data_arc = Arc::new(Mutex::new(network_data_de.clone()));
         training_threads.push(train_single_thread(
-            id,
-            network_data_de.clone(),
-            args.shuffle,
+            id, network_data_arc, args.shuffle,
         ));
     }
 
@@ -38,23 +43,16 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
         all_results.push(thread.join().unwrap());
     }
 
-    // Isolate validation inputs
-    let validation_inputs: Array2<f64> = network_data_de.test_inputs.t().to_owned();
-    // Isolate validation outputs
-    let validation_outputs: Array2<f64> = network_data_de.test_outputs.to_owned();
-
     let threaded_results =
         ThreadedResultsSer::new(all_results, validation_inputs, validation_outputs);
     save_output::save_to_dir(args, threaded_results)
 }
 
 /// Create new training thread
-fn train_single_thread(
-    id: usize,
-    mut network_data_de: NetworkDataDe,
-    shuffle: bool,
-) -> JoinHandle<TrainingResultsSer> {
+fn train_single_thread(id: usize, network_data_arc: Arc<Mutex<NetworkDataDe>>, shuffle: bool) -> JoinHandle<TrainingResultsSer> {
     thread::spawn(move || {
+        // Take ownership of Mutex data
+        let network_data_de: &mut NetworkDataDe = &mut *network_data_arc.lock().unwrap();
         // Create new network with randomized weights and biases
         let mut network: Perceptron = network_data_de.create_network().unwrap();
 
