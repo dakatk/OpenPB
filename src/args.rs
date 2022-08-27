@@ -24,5 +24,5 @@ pub struct Args {
     pub epochs: usize,
     /// Maximum number of input vectors trained during each cycle (optional)
     #[clap(short, long, value_parser)]
-    pub batch_size: Option<usize>, 
+    pub batch_size: Option<usize>,
 }

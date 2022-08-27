@@ -32,7 +32,12 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
     // Create training threads
     for id in 0..args.threads {
         let network_data_arc = Arc::new(Mutex::new(network_data_de.clone()));
-        training_threads.push(train_single_thread(id, network_data_arc, args.shuffle, args.epochs));
+        training_threads.push(train_single_thread(
+            id,
+            network_data_arc,
+            args.shuffle,
+            args.epochs,
+        ));
     }
 
     // Wait for each training thread to finish, then add the data
@@ -47,13 +52,13 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
 }
 
 /// Create new training thread
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `id` - Unique ID for new thread
-/// * `network_data_arc` Thread safe reference counted 
+/// * `network_data_arc` Thread safe reference counted
 /// mutex containing network training data
-/// * `shuffle` - Where or not training set should be 
+/// * `shuffle` - Where or not training set should be
 /// shuffled each training cycle
 /// * `epochs` - Maximum allowed epochs for this thread
 fn train_single_thread(
