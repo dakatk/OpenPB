@@ -19,4 +19,10 @@ pub struct Args {
     /// Flag that indicates whether or not to shuffle training data during each cycle (optional)
     #[clap(short, long, value_parser, default_value_t = false)]
     pub shuffle: bool,
+    /// Maximum number of epochs (iterations) until training loop finishes (required)
+    #[clap(short, long, value_parser)]
+    pub epochs: usize,
+    /// Maximum number of input vectors trained during each cycle (optional)
+    #[clap(short, long, value_parser)]
+    pub batch_size: Option<usize>, 
 }

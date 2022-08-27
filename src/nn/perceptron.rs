@@ -122,12 +122,12 @@ impl Perceptron {
         metric: &dyn Metric,
         cost: &dyn Cost,
         encoder: &dyn Encoder,
-        epochs: u64,
+        epochs: usize,
         shuffle: bool,
-    ) -> u64 {
+    ) -> usize {
         // Keep track of which iteration training ended on
         // (default is the maximum number of epochs)
-        let mut last_epoch: u64 = epochs;
+        let mut last_epoch: usize = epochs;
 
         // Split training set
         let mut training_inputs: Array2<f64> = training_set.0.clone();
