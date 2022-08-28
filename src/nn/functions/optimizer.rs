@@ -5,17 +5,17 @@ use ndarray::Array2;
 /// Wrapper for updating a network with any given
 /// optimization function using online training
 pub fn optimize(optimizer: &mut dyn Optimizer, layers: &mut Vec<Layer>, input_rows: usize) {
-    let deltas: Vec<Array2<f64>> = layers.iter()
+    let deltas: Vec<Array2<f64>> = layers
+        .iter()
         .enumerate()
-        .map(
-            |layer: (usize, &Layer)| {
-                let deltas: &Array2<f64> = match &layer.1.deltas {
-                    Some(deltas) => deltas,
-                    None => panic!("Deltas not calculated for layer {}", layer.0)
-                };
-                deltas.clone()
-            }
-        ).collect();
+        .map(|layer: (usize, &Layer)| {
+            let deltas: &Array2<f64> = match &layer.1.deltas {
+                Some(deltas) => deltas,
+                None => panic!("Deltas not calculated for layer {}", layer.0),
+            };
+            deltas.clone()
+        })
+        .collect();
     optimizer.update(layers, &deltas, input_rows);
 }
 

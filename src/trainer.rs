@@ -47,8 +47,12 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
         all_results.push(thread.join().unwrap());
     }
 
-    let threaded_results =
-        ThreadedResultsSer::new(all_results, validation_inputs, validation_outputs);
+    let threaded_results = ThreadedResultsSer::new(
+        all_results,
+        validation_inputs,
+        validation_outputs,
+        args.batch_size,
+    );
     save_output::save_to_dir(args, threaded_results)
 }
 

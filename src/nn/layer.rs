@@ -91,7 +91,7 @@ impl Layer {
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
         let outputs: Array2<f64> = self.activation_fn.call(&activations);
 
-        self.inputs.assign(inputs);
+        self.inputs = inputs.clone();
         self.activations = Some(activations);
 
         match self.dropout {
@@ -151,7 +151,7 @@ impl Layer {
     pub fn back_prop(&mut self, attached_layer: &Layer) {
         let attached_deltas: &Array2<f64> = match &attached_layer.deltas {
             Some(attached_deltas) => attached_deltas,
-            None => panic!("Deltas not calculated for attached layer")
+            None => panic!("Deltas not calculated for attached layer"),
         };
         let next_deltas: Array2<f64> = attached_layer.weights.t().dot(attached_deltas);
         self.back_prop_with_deltas(&next_deltas);
@@ -163,12 +163,12 @@ impl Layer {
     ///
     /// * `attached_deltas` - Attached layer's deltas (assumed to have
     /// already been computed)
-    pub fn back_prop_with_deltas(&mut self, attached_delta: &Array2<f64>) {
+    pub fn back_prop_with_deltas(&mut self, attached_deltas: &Array2<f64>) {
         let activations: &Array2<f64> = match &self.activations {
             Some(activations) => activations,
-            None => panic!("Error: back prop run before feed forward")
+            None => panic!("Error: back prop run before feed forward"),
         };
-        let deltas: Array2<f64> = self.activation_fn.prime(activations) * attached_delta;
+        let deltas: Array2<f64> = self.activation_fn.prime(activations) * attached_deltas;
         self.deltas = Some(deltas);
         self.drop_deltas();
     }
@@ -178,7 +178,7 @@ impl Layer {
     fn drop_deltas(&mut self) {
         let deltas: &mut Array2<f64> = match &mut self.deltas {
             Some(deltas) => deltas,
-            None => panic!("Can't drop deltas if deltas haven't been calculated")
+            None => panic!("Can't drop deltas if deltas haven't been calculated"),
         };
         match self.dropout {
             Some(_) => {

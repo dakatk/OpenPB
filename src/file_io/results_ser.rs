@@ -70,6 +70,8 @@ pub struct ThreadedResultsSer {
     /// Output values to validate the
     /// network against
     validation_outputs: Array2<f64>,
+    /// Size of minibatches (if applicable)
+    batch_size: Option<usize>,
 }
 
 impl ThreadedResultsSer {
@@ -77,11 +79,13 @@ impl ThreadedResultsSer {
         all_results: Vec<TrainingResultsSer>,
         validation_inputs: Array2<f64>,
         validation_outputs: Array2<f64>,
+        batch_size: Option<usize>,
     ) -> Self {
         Self {
             all_results,
             validation_inputs,
             validation_outputs,
+            batch_size,
         }
     }
 }

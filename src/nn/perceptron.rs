@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use super::functions::activation::ActivationFn;
 use super::functions::cost::Cost;
 use super::functions::encoder::Encoder;
@@ -9,6 +7,7 @@ use super::layer::Layer;
 use ndarray::{Array1, Array2, ArrayViewMut1, Axis, Slice};
 use rand::seq::SliceRandom;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
+use std::fmt::Debug;
 
 pub struct Perceptron {
     /// Input, hidden, and output layers. Each layer is considered
@@ -92,7 +91,6 @@ impl Perceptron {
         }
     }
 
-    // TODO Minibatch support?
     /// Trains the entire Network for a specified number of cycles. Training is
     /// stopped when the given metric is satisfied based on the input/output
     /// sets provided
@@ -144,7 +142,7 @@ impl Perceptron {
 
         // Encode training set output values to match
         // the network's output format
-        let expected: Array2<f64> = encoder.encode(&training_outputs).t().to_owned();
+        let mut expected: Array2<f64> = encoder.encode(&training_outputs).t().to_owned();
 
         // Initiate RNG
         let mut rng = rand::thread_rng();
@@ -165,9 +163,13 @@ impl Perceptron {
             }
 
             if let Some(batch_size) = batch_size {
-                // TODO Increment starting index each cycle
-                training_inputs = self.batch(&training_set.0, 0, batch_size, Axis(1));
-                training_outputs = self.batch(&training_set.1, 0, batch_size, Axis(0));
+                // Create minibatches by slicing training sets
+                training_inputs = self.batch(&training_set.0, batch_start, batch_size, Axis(1));
+                training_outputs = self.batch(&training_set.1, batch_start, batch_size, Axis(0));
+
+                // Re-evaluate expected values for minibatch
+                expected = encoder.encode(&training_outputs).t().to_owned();
+
                 // Increment batch start index
                 batch_start += batch_size;
                 if batch_start > input_cols {
@@ -214,9 +216,18 @@ impl Perceptron {
         }
     }
 
-    fn batch(&self, values: &Array2<f64>, start: usize, batch_size: usize, axis: Axis) -> Array2<f64> {
-        let end = start + batch_size;
-        values.slice_axis(axis, Slice::from(start..end)).to_owned()
+    fn batch(
+        &self,
+        values: &Array2<f64>,
+        start: usize,
+        batch_size: usize,
+        axis: Axis,
+    ) -> Array2<f64> {
+        let end: usize = start + batch_size;
+        let end = end.min(values.len_of(axis));
+        let indices: Slice = Slice::from(start..end);
+
+        values.slice_axis(axis, indices).to_owned()
     }
 
     /// Performs the feedforward step for all Layers to return the
@@ -259,11 +270,11 @@ impl Perceptron {
     /// * `inputs` - Matrix of input vectors
     /// * `encoder` - Method for decoding output to readable values
     pub fn predict(&mut self, inputs: &Array2<f64>, encoder: &dyn Encoder) -> Array2<f64> {
-        let mut output: Array2<f64> = inputs.to_owned();
+        let mut prev_outputs: Array2<f64> = inputs.to_owned();
         for layer in self.layers.iter_mut() {
-            output = layer.predict(&output);
+            prev_outputs = layer.predict(&prev_outputs);
         }
-        encoder.decode(&output)
+        encoder.decode(&prev_outputs)
     }
 }
 
