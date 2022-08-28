@@ -6,7 +6,7 @@ use super::functions::encoder::Encoder;
 use super::functions::metric::Metric;
 use super::functions::optimizer::{optimize, Optimizer};
 use super::layer::Layer;
-use ndarray::{Array1, Array2, ArrayViewMut1, Axis};
+use ndarray::{Array1, Array2, ArrayViewMut1, Axis, Slice};
 use rand::seq::SliceRandom;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
@@ -124,10 +124,15 @@ impl Perceptron {
         encoder: &dyn Encoder,
         epochs: usize,
         shuffle: bool,
+        batch_size: Option<usize>,
     ) -> usize {
         // Keep track of which iteration training ended on
         // (default is the maximum number of epochs)
         let mut last_epoch: usize = epochs;
+
+        // Rows and columns of full training input set
+        let input_rows: usize = training_set.0.nrows();
+        let input_cols: usize = training_set.0.ncols();
 
         // Split training set
         let mut training_inputs: Array2<f64> = training_set.0.clone();
@@ -140,10 +145,12 @@ impl Perceptron {
         // Encode training set output values to match
         // the network's output format
         let expected: Array2<f64> = encoder.encode(&training_outputs).t().to_owned();
-        let input_rows: usize = training_inputs.nrows();
 
         // Initiate RNG
         let mut rng = rand::thread_rng();
+
+        // Starting index of batch, if applicable
+        let mut batch_start: usize = 0;
 
         for epoch in 1..=epochs {
             if shuffle {
@@ -155,6 +162,17 @@ impl Perceptron {
 
                 self.shuffle_on_axis(&mut training_inputs, &indices, Axis(1));
                 self.shuffle_on_axis(&mut training_outputs, &indices, Axis(0));
+            }
+
+            if let Some(batch_size) = batch_size {
+                // TODO Increment starting index each cycle
+                training_inputs = self.batch(&training_set.0, 0, batch_size, Axis(1));
+                training_outputs = self.batch(&training_set.1, 0, batch_size, Axis(0));
+                // Increment batch start index
+                batch_start += batch_size;
+                if batch_start > input_cols {
+                    batch_start = 0;
+                }
             }
             // Check network prediction against validation set
             let prediction: Array2<f64> = self.predict(validation_inputs, encoder);
@@ -196,6 +214,11 @@ impl Perceptron {
         }
     }
 
+    fn batch(&self, values: &Array2<f64>, start: usize, batch_size: usize, axis: Axis) -> Array2<f64> {
+        let end = start + batch_size;
+        values.slice_axis(axis, Slice::from(start..end)).to_owned()
+    }
+
     /// Performs the feedforward step for all Layers to return the
     /// network's prediction for a given input vector
     ///
@@ -216,12 +239,12 @@ impl Perceptron {
     /// # Arguments
     ///
     /// * `deltas` - Delta values matrix calculated from output layer
-    pub fn back_prop(&mut self, delta: &Array2<f64>) {
+    pub fn back_prop(&mut self, deltas: &Array2<f64>) {
         let mut attached_layer: Option<&Layer> = None;
         for layer in self.layers.iter_mut().rev() {
             match attached_layer {
                 Some(attached_layer) => layer.back_prop(attached_layer),
-                None => layer.back_prop_with_delta(delta),
+                None => layer.back_prop_with_deltas(deltas),
             };
             attached_layer = Some(layer);
         }

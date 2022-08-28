@@ -37,6 +37,7 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
             network_data_arc,
             args.shuffle,
             args.epochs,
+            args.batch_size,
         ));
     }
 
@@ -66,6 +67,7 @@ fn train_single_thread(
     network_data_arc: Arc<Mutex<NetworkDataDe>>,
     shuffle: bool,
     epochs: usize,
+    batch_size: Option<usize>,
 ) -> JoinHandle<TrainingResultsSer> {
     thread::spawn(move || {
         // Take ownership of Mutex data
@@ -103,6 +105,7 @@ fn train_single_thread(
             encoder,
             epochs,
             shuffle,
+            batch_size,
         );
         println!("Training finished for thread {id}!");
 
