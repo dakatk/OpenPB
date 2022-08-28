@@ -8,15 +8,20 @@ pub trait Metric: DynClone + Sync + Send {
     /// Metric name for command line output
     fn label(&self) -> &str;
 
+    /// Metric score from comparing expected and actual values
     ///
-    fn value(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> f64;
+    /// # Argumentsd
+    ///
+    /// * `actual` - Actual values
+    /// * `expected` - Expected values
+    fn value(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> f32;
 
     /// Returns true if the given sets of values satisfy the metric
     ///
     /// # Arguments
     ///
-    /// * `o` - Actual values
-    /// * `y` - Expected values
+    /// * `actual` - Actual values
+    /// * `expected` - Expected values
     fn check(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> bool;
 }
 dyn_clone!(Metric);
@@ -25,15 +30,18 @@ dyn_clone!(Metric);
 /// of all expected and actual output values are equal
 #[derive(Clone)]
 pub struct Accuracy {
-    ///
-    min: f64,
+    /// Minimum passing accuracy score
+    min: f32,
 }
 
 impl Accuracy {
+    /// # Arguments
     ///
+    /// * `params` - JSON object with initialization parameters.
+    /// Allowed keys: "min"
     pub fn new(params: &Map<String, Value>) -> Self {
         let min: f64 = params["min"].as_f64().unwrap_or(1.0);
-        Self { min }
+        Self { min: min as f32 }
     }
 }
 
@@ -42,14 +50,14 @@ impl Metric for Accuracy {
         "Accuracy"
     }
 
-    fn value(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> f64 {
+    fn value(&self, actual: &Array2<f64>, expected: &Array2<f64>) -> f32 {
         let equality: Vec<usize> = actual
             .iter()
             .zip(expected)
             .map(|a: (&f64, &f64)| (a.0 == a.1) as usize)
             .collect();
-        let len = equality.len() as f64;
-        let sum = equality.into_iter().sum::<usize>() as f64;
+        let len = equality.len() as f32;
+        let sum = equality.into_iter().sum::<usize>() as f32;
         sum / len
     }
 

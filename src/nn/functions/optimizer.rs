@@ -2,6 +2,12 @@ use crate::dyn_clone;
 use crate::nn::layer::Layer;
 use ndarray::Array2;
 
+/// Default momentum constant
+pub const DEFAULT_BETA1: f64 = 0.9;
+
+/// Default secondary momentum constant
+pub const DEFAULT_BETA2: f64 = 0.999;
+
 /// Wrapper for updating a network with any given
 /// optimization function using online training
 pub fn optimize(optimizer: &mut dyn Optimizer, layers: &mut Vec<Layer>, input_rows: usize) {
@@ -18,12 +24,6 @@ pub fn optimize(optimizer: &mut dyn Optimizer, layers: &mut Vec<Layer>, input_ro
         .collect();
     optimizer.update(layers, &deltas, input_rows);
 }
-
-/// Default momentum constant
-pub const DEFAULT_GAMMA: f64 = 0.9;
-
-/// Default secondary momentum constant
-pub const DEFAULT_BETA: f64 = 0.999;
 
 /// Optimizer functions that's used to determine how a Network's weights should be
 /// Adjusted after each training step

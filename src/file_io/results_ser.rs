@@ -10,7 +10,7 @@ struct MetricSer {
     name: String,
     /// Metric value (score) for the network's
     /// prediction after training has concluded
-    value: f64,
+    value: f32,
     /// Whether or not the the metric's score
     /// is considered a "passing" score
     passed: bool,
@@ -38,7 +38,7 @@ impl TrainingResultsSer {
     pub fn new(
         network: Perceptron,
         metric_label: String,
-        metric_value: f64,
+        metric_value: f32,
         metric_passed: bool,
         elapsed_time: f32,
         total_epochs: usize,

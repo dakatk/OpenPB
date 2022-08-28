@@ -11,7 +11,6 @@ use ndarray::Array2;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::SystemTime;
-use std::usize;
 
 /// Train network with deserailzed JSON data
 ///
@@ -74,7 +73,7 @@ fn train_single_thread(
     batch_size: Option<usize>,
 ) -> JoinHandle<TrainingResultsSer> {
     thread::spawn(move || {
-        // Take ownership of Mutex data
+        // Block current thread until it has ownership of Mutex data
         let network_data_de: &mut NetworkDataDe = &mut *network_data_arc.lock().unwrap();
         // Create new network with randomized weights and biases
         let mut network: Perceptron = network_data_de.create_network().unwrap();
@@ -123,7 +122,7 @@ fn train_single_thread(
 
         // Metric results
         let metric_label: String = metric.label().to_string();
-        let metric_value: f64 = metric.value(&predicted_output, validation_outputs);
+        let metric_value: f32 = metric.value(&predicted_output, validation_outputs);
         let metric_passed: bool = metric.check(&predicted_output, validation_outputs);
 
         TrainingResultsSer::new(

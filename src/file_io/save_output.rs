@@ -2,8 +2,7 @@
 use super::results_ser::ThreadedResultsSer;
 use crate::args::Args;
 use chrono::{DateTime, Utc};
-use std::fs;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::Path;
 

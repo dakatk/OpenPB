@@ -2,8 +2,7 @@ use crate::nn::functions::activation::{ActivationFn, LeakyReLU, ReLU, Sigmoid};
 use crate::nn::functions::cost::{Cost, MSE};
 use crate::nn::functions::encoder::{Encoder, OneHot};
 use crate::nn::functions::metric::{Accuracy, Metric};
-use crate::nn::functions::optimizer;
-use crate::nn::functions::optimizer::{Adam, Optimizer, SGD};
+use crate::nn::functions::optimizer::{self, Adam, Optimizer, SGD};
 use crate::nn::perceptron::Perceptron;
 use ndarray::Array2;
 use serde::Deserialize;
@@ -54,7 +53,7 @@ struct OptimizerDe {
     beta2: Option<f64>,
 }
 
-///
+/// Deserialized values representing the Encoder in JSON
 #[derive(Deserialize, Debug, Clone)]
 struct EncoderDe {
     /// Name of the Decoder
@@ -169,7 +168,7 @@ impl NetworkDataDe {
             Some(value) => value,
             None => return Err("Invalid decoder name".to_string()),
         };
-        let optimizer = match optimizer_from_str(&network_de.optimizer) {
+        let optimizer: Box<dyn Optimizer> = match optimizer_from_str(&network_de.optimizer) {
             Some(value) => value,
             None => return Err("Invalid activation function name".to_string()),
         };
@@ -217,6 +216,10 @@ impl NetworkDataDe {
 
 /// Create new 'Cost' object if the provided name
 /// matches an existing cost function
+///
+/// # Arguments
+///
+/// * `name` - Cost function's name
 fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
     match name.as_str() {
         "mean squared error" | "mean_squared_error" | "mse" => Some(Box::new(MSE)),
@@ -226,6 +229,10 @@ fn cost_from_str(name: String) -> Option<Box<dyn Cost>> {
 
 /// Create new 'ActivationFn' object if the provided name
 /// matches an existing activation function
+///
+/// # Arguments
+///
+/// * `name` - Activation function's name
 fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
     match name.as_str() {
         "sigmoid" => Some(Box::new(Sigmoid)),
@@ -237,6 +244,10 @@ fn activation_from_str(name: String) -> Option<Box<dyn ActivationFn>> {
 
 /// Create new 'Metric' object if the provided name
 /// matches an existing metric
+///
+/// # Arguments
+///
+/// * `metric_de` - Metric's name and constructor arguments
 fn metric_from_str(metric_de: &MetricDe) -> Option<Box<dyn Metric>> {
     match metric_de.name.to_lowercase().as_str() {
         "accuracy" | "acc" => Some(Box::new(Accuracy::new(&metric_de.args))),
@@ -246,25 +257,28 @@ fn metric_from_str(metric_de: &MetricDe) -> Option<Box<dyn Metric>> {
 
 /// Create new 'Encoder' object if the provided name
 /// matches an existing encoder
-fn encoder_from_str(decode_de: &EncoderDe) -> Option<Box<dyn Encoder>> {
-    match decode_de.name.to_lowercase().as_str() {
-        "one hot" | "one_hot" | "onehot" => Some(Box::new(OneHot::new(&decode_de.args))),
+///
+/// # Arguments
+///
+/// * `encoder_de` - Encoder function's name and constructor arguments
+fn encoder_from_str(encoder_de: &EncoderDe) -> Option<Box<dyn Encoder>> {
+    match encoder_de.name.to_lowercase().as_str() {
+        "one hot" | "one_hot" | "onehot" => Some(Box::new(OneHot::new(&encoder_de.args))),
         _ => None,
     }
 }
 
 /// Create new 'Optimizer' object if the provided name
 /// matches an existing optimization function
+///
+/// # Arguments
+///
+/// * `optimizer_de` - Optimization function's name and constructor arguments
 fn optimizer_from_str(optimizer_de: &OptimizerDe) -> Option<Box<dyn Optimizer>> {
-    let beta1: f64 = match optimizer_de.beta1 {
-        Some(beta1) => beta1,
-        None => optimizer::DEFAULT_GAMMA,
-    };
-
-    let beta2: f64 = match optimizer_de.beta2 {
-        Some(beta2) => beta2,
-        None => optimizer::DEFAULT_BETA,
-    };
+    // Check if beta1 and beta2 values were deserialized from JSON.
+    // If not, set them to default values
+    let beta1: f64 = optimizer_de.beta1.unwrap_or(optimizer::DEFAULT_BETA1);
+    let beta2: f64 = optimizer_de.beta2.unwrap_or(optimizer::DEFAULT_BETA2);
 
     match optimizer_de.name.to_lowercase().as_str() {
         "stochastic gradient descent" | "gradient descent" | "sgd" => {

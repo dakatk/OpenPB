@@ -221,6 +221,7 @@ impl Serialize for Layer {
     {
         let mut s = serializer.serialize_struct("Layer", 2)?;
 
+        // Only weights and biases are serialized
         s.serialize_field("weights", &self.weights)?;
         s.serialize_field("biases", &self.biases)?;
         s.end()
