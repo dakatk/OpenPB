@@ -91,9 +91,6 @@ struct NetworkDe {
 
     /// Metric values
     metric: MetricDe,
-
-    /// Number of trianing epochs
-    epochs: u64,
 }
 
 #[derive(Clone)]
@@ -122,9 +119,6 @@ pub struct NetworkDataDe {
 
     /// Output encoder
     pub encoder: Box<dyn Encoder>,
-
-    /// Number of trianing epochs
-    pub epochs: u64,
 
     /// Deserailized paramaters for network creation
     network_de: NetworkDe,
@@ -189,7 +183,6 @@ impl NetworkDataDe {
             metric,
             encoder,
             optimizer,
-            epochs: network_de.epochs,
             network_de,
         })
     }

@@ -11,7 +11,7 @@ pub struct Layer {
     /// Delta values computed using the first derivative of
     /// the Layer's activation function during backprop. Used
     /// to compute the gradient during the update stage
-    pub delta: Array2<f64>,
+    pub deltas: Option<Array2<f64>>,
 
     /// Input vector recorded during the feed-forward process
     pub inputs: Array2<f64>,
@@ -27,7 +27,7 @@ pub struct Layer {
     biases: Array2<f64>,
 
     /// Activation values: (weights dot inputs) + biases
-    activations: Array2<f64>,
+    activations: Option<Array2<f64>>,
 
     /// Function that determines the activation of individual neurons
     activation_fn: Box<dyn ActivationFn>,
@@ -57,30 +57,28 @@ impl Layer {
         // in the range [-0.5, 0.5)
         let distribution: Uniform<f64> = Uniform::new(-0.5, 0.5);
 
+        // Create weights matrix
         let weights: Array2<f64> = Array2::random((neurons, input_shape.0), distribution);
         // Scaling the weights by the sqrt of the number of nodes
         // helps to reduce the problem of disappearing gradient
         let weights: Array2<f64> = weights / f64::sqrt(input_shape.1 as f64);
 
+        // Create biases matrix
         let biases: Array2<f64> = Array2::random((neurons, 1), distribution);
 
-        // Stored values are all initialized to zero
-        let activations: Array2<f64> = Array2::zeros((neurons, input_shape.1));
-        let delta: Array2<f64> = Array2::zeros((neurons, input_shape.1));
+        // Stored inputs initialized to zero
         let inputs: Array2<f64> = Array2::zeros(input_shape);
 
-        let dropped_neurons: Vec<usize> = vec![];
-
         Layer {
-            delta,
+            deltas: None,
             inputs,
             neurons,
             weights,
             biases,
-            activations,
+            activations: None,
             activation_fn,
             dropout,
-            dropped_neurons,
+            dropped_neurons: vec![],
         }
     }
 
@@ -93,8 +91,8 @@ impl Layer {
         let activations: Array2<f64> = self.weights.dot(inputs) + &self.biases;
         let outputs: Array2<f64> = self.activation_fn.call(&activations);
 
-        self.inputs.assign(inputs);
-        self.activations.assign(&activations);
+        self.inputs = inputs.clone();
+        self.activations = Some(activations);
 
         match self.dropout {
             Some(dropout) => {
@@ -151,8 +149,12 @@ impl Layer {
     /// * `cost` - The cost or loss function associated with the
     /// training setup
     pub fn back_prop(&mut self, attached_layer: &Layer) {
-        let attached_delta: Array2<f64> = attached_layer.weights.t().dot(&attached_layer.delta);
-        self.back_prop_with_delta(&attached_delta);
+        let attached_deltas: &Array2<f64> = match &attached_layer.deltas {
+            Some(attached_deltas) => attached_deltas,
+            None => panic!("Deltas not calculated for attached layer"),
+        };
+        let next_deltas: Array2<f64> = attached_layer.weights.t().dot(attached_deltas);
+        self.back_prop_with_deltas(&next_deltas);
     }
 
     /// Computes current layer's delta values from attached layer's deltas
@@ -161,19 +163,28 @@ impl Layer {
     ///
     /// * `attached_deltas` - Attached layer's deltas (assumed to have
     /// already been computed)
-    pub fn back_prop_with_delta(&mut self, attached_delta: &Array2<f64>) {
-        self.delta = self.activation_fn.prime(&self.activations) * attached_delta;
+    pub fn back_prop_with_deltas(&mut self, attached_deltas: &Array2<f64>) {
+        let activations: &Array2<f64> = match &self.activations {
+            Some(activations) => activations,
+            None => panic!("Error: back prop run before feed forward"),
+        };
+        let deltas: Array2<f64> = self.activation_fn.prime(activations) * attached_deltas;
+        self.deltas = Some(deltas);
         self.drop_deltas();
     }
 
     /// Remove deltas relative to which neurons have been dropped
     /// during the latest training cycle
     fn drop_deltas(&mut self) {
+        let deltas: &mut Array2<f64> = match &mut self.deltas {
+            Some(deltas) => deltas,
+            None => panic!("Can't drop deltas if deltas haven't been calculated"),
+        };
         match self.dropout {
             Some(_) => {
-                let zeros: Array1<f64> = Array1::zeros(self.delta.ncols());
+                let zeros: Array1<f64> = Array1::zeros(deltas.ncols());
                 for dropped_neuron in self.dropped_neurons.iter() {
-                    self.delta.row_mut(*dropped_neuron).assign(&zeros);
+                    deltas.row_mut(*dropped_neuron).assign(&zeros);
                 }
             }
             None => {}

@@ -32,7 +32,13 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
     // Create training threads
     for id in 0..args.threads {
         let network_data_arc = Arc::new(Mutex::new(network_data_de.clone()));
-        training_threads.push(train_single_thread(id, network_data_arc, args.shuffle));
+        training_threads.push(train_single_thread(
+            id,
+            network_data_arc,
+            args.shuffle,
+            args.epochs,
+            args.batch_size,
+        ));
     }
 
     // Wait for each training thread to finish, then add the data
@@ -41,16 +47,31 @@ pub fn train_from_json(network_data_de: NetworkDataDe, args: Args) -> Result<(),
         all_results.push(thread.join().unwrap());
     }
 
-    let threaded_results =
-        ThreadedResultsSer::new(all_results, validation_inputs, validation_outputs);
+    let threaded_results = ThreadedResultsSer::new(
+        all_results,
+        validation_inputs,
+        validation_outputs,
+        args.batch_size,
+    );
     save_output::save_to_dir(args, threaded_results)
 }
 
 /// Create new training thread
+///
+/// # Arguments
+///
+/// * `id` - Unique ID for new thread
+/// * `network_data_arc` Thread safe reference counted
+/// mutex containing network training data
+/// * `shuffle` - Where or not training set should be
+/// shuffled each training cycle
+/// * `epochs` - Maximum allowed epochs for this thread
 fn train_single_thread(
     id: usize,
     network_data_arc: Arc<Mutex<NetworkDataDe>>,
     shuffle: bool,
+    epochs: usize,
+    batch_size: Option<usize>,
 ) -> JoinHandle<TrainingResultsSer> {
     thread::spawn(move || {
         // Take ownership of Mutex data
@@ -78,11 +99,8 @@ fn train_single_thread(
         // Start time before training begins
         let now: SystemTime = SystemTime::now();
 
-        // Maximum allowed epochs for this thread
-        let epochs: u64 = network_data_de.epochs;
-
         println!("Network initialized, starting training cycle for thread {id}...");
-        let total_epochs: u64 = network.fit(
+        let total_epochs: usize = network.fit(
             &training_set,
             &validation_set,
             optimizer,
@@ -91,6 +109,7 @@ fn train_single_thread(
             encoder,
             epochs,
             shuffle,
+            batch_size,
         );
         println!("Training finished for thread {id}!");
 

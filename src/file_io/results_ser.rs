@@ -28,7 +28,7 @@ pub struct TrainingResultsSer {
     elapsed_time: f32,
     /// Total number of iterations until the
     /// network was considered fully trained
-    total_epochs: u64,
+    total_epochs: usize,
     /// Predicted values from feeding validtion
     /// set inputs into the trained network
     predicted_output: Array2<f64>,
@@ -41,7 +41,7 @@ impl TrainingResultsSer {
         metric_value: f64,
         metric_passed: bool,
         elapsed_time: f32,
-        total_epochs: u64,
+        total_epochs: usize,
         predicted_output: Array2<f64>,
     ) -> Self {
         let metric: MetricSer = MetricSer {
@@ -70,6 +70,8 @@ pub struct ThreadedResultsSer {
     /// Output values to validate the
     /// network against
     validation_outputs: Array2<f64>,
+    /// Size of minibatches (if applicable)
+    batch_size: Option<usize>,
 }
 
 impl ThreadedResultsSer {
@@ -77,11 +79,13 @@ impl ThreadedResultsSer {
         all_results: Vec<TrainingResultsSer>,
         validation_inputs: Array2<f64>,
         validation_outputs: Array2<f64>,
+        batch_size: Option<usize>,
     ) -> Self {
         Self {
             all_results,
             validation_inputs,
             validation_outputs,
+            batch_size,
         }
     }
 }
